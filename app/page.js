@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
 import { Calendar, Clock, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, ArrowRight, AlertCircle, Filter, Lock, Eye, EyeOff, ChevronRight, Hash, Layers } from 'lucide-react';
 
