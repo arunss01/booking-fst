@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("POSTGRES_PRISMA_URL")        // Sesuai Foto Baris 2
-  directUrl = env("POSTGRES_URL_NON_POOLING")   // Sesuai Foto Baris 3
+  provider = "postgresql"
+  // Kita pakai variabel yang PASTI ADA di Vercel kamu
+  url      = env("POSTGRES_URL")
 }
 
 // ... (Biarkan model User, Room, Schedule, Booking dll tetap ada di bawah sini)
