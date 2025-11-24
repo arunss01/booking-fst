@@ -13,7 +13,6 @@ const BookingProvider = ({ children }) => {
   const [authError, setAuthError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  // Default Dashboard Date = Hari Ini
   const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
 
   const login = async (nimInput, passwordInput) => {
@@ -40,8 +39,8 @@ const BookingProvider = ({ children }) => {
     const data = await getInitialData(id, kelas, major, dateStr);
     if (data.success) {
       setPoints(data.points);
-      setSchedules(data.schedules);
-      setMyBookings(data.myBookings);
+      setSchedules(data.schedules || []);
+      setMyBookings(data.myBookings || []);
     }
   };
 
@@ -84,7 +83,8 @@ const BookingProvider = ({ children }) => {
       const result = await bookRoomAction(bookingData);
       if (result.success) {
           await refreshUserData(user.id, user.kelas, user.major, dashboardDate);
-          return { success: true, bookingId: result.bookingId };
+          // SAFETY: Pastikan return object ada bookingId-nya
+          return { success: true, bookingId: result.bookingId || "UNKNOWN-ID" };
       }
       return { success: false, message: result.message };
   };
@@ -124,7 +124,6 @@ const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Ya
     );
 };
 
-// Login Page
 const LoginPage = () => {
   const { login, authError, isLoading } = useBooking();
   const [nim, setNim] = useState('');
@@ -159,7 +158,6 @@ const LoginPage = () => {
   );
 };
 
-// Dashboard Student
 const DashboardPage = ({ onChangePage }) => {
   const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate } = useBooking();
   
@@ -169,26 +167,18 @@ const DashboardPage = ({ onChangePage }) => {
   };
 
   const currentDayName = getDayName(dashboardDate);
-  const todaysSchedules = schedules.filter(s => s.hari === currentDayName);
+  // SAFETY CHECK: Pastikan schedules ada sebelum di-filter
+  const todaysSchedules = (schedules || []).filter(s => s.hari === currentDayName);
 
-  // NEW LOGIC: Helper untuk cek apakah jadwal sudah lewat
   const isSchedulePast = (timeStr) => {
       const now = new Date();
       const selectedDate = new Date(dashboardDate);
-      
-      // Jika tanggal dashboard < hari ini -> PASTI LEWAT
-      // (Set jam selectedDate ke akhir hari biar aman bandingnya)
       if (selectedDate.setHours(0,0,0,0) < now.setHours(0,0,0,0)) return true;
-      
-      // Jika tanggal dashboard > hari ini -> BELUM LEWAT
       if (selectedDate.setHours(0,0,0,0) > now.setHours(0,0,0,0)) return false;
-
-      // Jika tanggal dashboard == hari ini -> Cek Jam
       const [h, m] = timeStr.split(':').map(Number);
       const scheduleTime = new Date();
       scheduleTime.setHours(h, m, 0, 0);
-      
-      return scheduleTime < new Date(); // True jika jam jadwal < jam sekarang
+      return scheduleTime < new Date();
   };
 
   const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
@@ -200,6 +190,9 @@ const DashboardPage = ({ onChangePage }) => {
          title={modalData.type === 'cancel_schedule' ? "Batalkan Jadwal?" : "Batalkan Booking?"}
          onCancel={() => setModalData({ ...modalData, isOpen: false })}
          onConfirm={async () => {
+             // SAFETY CHECK: Pastikan modalData.data tidak null
+             if (!modalData.data) return;
+
              if (modalData.type === 'cancel_schedule') await cancelSchedule(modalData.data.id, modalData.data.sks);
              else await cancelBooking(modalData.data.bookingId, modalData.data.duration);
              setModalData({ isOpen: false, type: '', data: null });
@@ -209,7 +202,6 @@ const DashboardPage = ({ onChangePage }) => {
           <p className="text-slate-600">Apakah Anda yakin ingin membatalkan ini? Poin akan disesuaikan.</p>
       </Modal>
 
-      {/* Stats Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 bg-gradient-to-r from-emerald-700 to-emerald-600 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
           <div className="relative z-10">
@@ -228,13 +220,11 @@ const DashboardPage = ({ onChangePage }) => {
         </div>
       </div>
 
-      {/* Date Navigator */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between sticky top-16 z-30">
         <h3 className="font-bold text-slate-700 flex items-center gap-2"><Calendar size={20} className="text-emerald-600"/> Jadwal Kuliah</h3>
         <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"/>
       </div>
 
-      {/* Table Jadwal */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-600 flex justify-between">
               <span>{currentDayName}</span>
@@ -254,10 +244,8 @@ const DashboardPage = ({ onChangePage }) => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {todaysSchedules.map((sch) => {
-                  // NEW LOGIC: Cek status disable
                   const isPast = isSchedulePast(sch.jamMulai);
                   const isCancelled = sch.status === 'cancelled';
-                  
                   return (
                     <tr key={sch.id} className={`hover:bg-slate-50 transition-colors ${isCancelled ? 'bg-red-50/50' : ''} ${isPast ? 'opacity-60' : ''}`}>
                         <td className="p-4 font-medium text-slate-600">{sch.jamMulai} - {sch.jamSelesai}</td>
@@ -285,13 +273,17 @@ const DashboardPage = ({ onChangePage }) => {
           )}
       </div>
 
-      {/* Booking History */}
-      {myBookings.length > 0 && (
+      {/* Booking History (SAFETY CHECK: Jika myBookings null, jangan crash) */}
+      {myBookings && myBookings.length > 0 && (
         <div className="mt-8">
            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><CheckCircle className="text-emerald-600" size={20} /> Tiket Booking Saya</h3>
            <div className="grid gap-4 md:grid-cols-2">
-             {myBookings.map(b => (
-               <div key={b.bookingId} className={`bg-white rounded-xl shadow-md border p-4 ${b.status === 'DIBATALKAN' ? 'opacity-75 border-red-200' : 'border-slate-200'}`}>
+             {myBookings.map(b => {
+               // SAFETY CHECK: Jika data b corrupt/null, skip
+               if (!b) return null;
+               
+               return (
+               <div key={b.bookingId || Math.random()} className={`bg-white rounded-xl shadow-md border p-4 ${b.status === 'DIBATALKAN' ? 'opacity-75 border-red-200' : 'border-slate-200'}`}>
                    <div className="flex justify-between mb-2">
                        <span className="font-mono font-bold text-slate-600">{b.bookingId}</span>
                        <span className={`text-xs font-bold px-2 py-1 rounded ${b.status === 'TERKONFIRMASI' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{b.status}</span>
@@ -302,7 +294,7 @@ const DashboardPage = ({ onChangePage }) => {
                        <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:underline">Batalkan Booking</button>
                    )}
                </div>
-             ))}
+             )})}
            </div>
         </div>
       )}
@@ -310,21 +302,19 @@ const DashboardPage = ({ onChangePage }) => {
   );
 };
 
-// Booking Flow (NEW: Validasi Tanggal & Waktu)
 const BookingFlow = ({ onChangePage }) => {
     const { points, checkAvailability, executeBooking } = useBooking();
     const [step, setStep] = useState(0); 
     const [date, setDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState(1);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 Menit
+    const [timeLeft, setTimeLeft] = useState(300); 
     const [allRoomsStatus, setAllRoomsStatus] = useState([]);
     const [selectedFloor, setSelectedFloor] = useState(2); 
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [newBookingId, setNewBookingId] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
   
-    // Timer Logic
     useEffect(() => {
         let interval;
         if (step === 1) {
@@ -343,16 +333,13 @@ const BookingFlow = ({ onChangePage }) => {
         return () => clearInterval(interval);
     }, [step]);
   
-    // NEW LOGIC: Validasi Input Tanggal & Jam
     const handleCheckAvailability = async (e) => {
       e.preventDefault();
       if (!date || !startTime) return alert("Mohon isi tanggal dan jam.");
       
-      // Validasi Tanggal (Tidak boleh masa lalu)
       const today = new Date().toISOString().split('T')[0];
       if (date < today) return alert("Tidak bisa memilih tanggal yang sudah berlalu.");
 
-      // Validasi Jam (Jika hari ini, jam tidak boleh lewat)
       if (date === today) {
           const now = new Date();
           const [h, m] = startTime.split(':').map(Number);
@@ -400,7 +387,6 @@ const BookingFlow = ({ onChangePage }) => {
             <form onSubmit={handleCheckAvailability} className="space-y-6">
               <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Tanggal</label>
-                  {/* NEW: Atribut min untuk mencegah tanggal lampau */}
                   <input type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -441,7 +427,6 @@ const BookingFlow = ({ onChangePage }) => {
                       <h3 className="font-bold text-lg">{room.name}</h3>
                       {room.isAvailable ? <span className="text-green-600 font-bold text-xs bg-green-100 px-2 py-1 rounded">OK</span> : <span className="text-red-600 font-bold text-xs bg-red-100 px-2 py-1 rounded">SIBUK</span>}
                   </div>
-                  {/* REVISI: Menampilkan Alasan Konflik beserta Waktunya */}
                   {!room.isAvailable && (
                       <div className="mt-3 pt-2 border-t border-slate-200 text-xs text-red-600 font-bold flex items-start gap-1">
                           <Clock size={12} className="mt-0.5 shrink-0"/> {room.conflictReason}
