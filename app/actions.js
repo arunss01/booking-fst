@@ -101,27 +101,26 @@ export async function cancelBookingAction(userId, bookingId, duration) {
   }
 }
 
+
 export async function checkRoomAvailabilityAction(date, startTimeStr, duration) {
-  // Logic ini tetap sama, karena availability real-time
-  // ... (Gunakan kode checkRoomAvailabilityAction dari sebelumnya, tidak perlu diubah)
-   try {
+  try {
     const timeToMinutes = (t) => {
         const [h, m] = t.split(':').map(Number);
         return h * 60 + m;
     };
+    
     const reqStart = timeToMinutes(startTimeStr);
     const reqEnd = reqStart + (duration * 60);
+
     const allRooms = await prisma.room.findMany();
     const dateObj = new Date(date);
     const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
     const dayName = days[dateObj.getDay()];
 
-    // Cek jadwal master yg aktif di hari itu
+    // Ambil jadwal kuliah & booking aktif
     const masterSchedules = await prisma.schedule.findMany({
       where: { hari: dayName },
-      include: { 
-          cancellations: { where: { date: date } } // Cek apakah dicancel tanggal ini
-      }
+      include: { cancellations: { where: { date: date } } }
     });
 
     const activeBookings = await prisma.booking.findMany({
@@ -132,11 +131,10 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
       let isAvailable = true;
       let conflictReason = "";
 
-      // A. Cek Jadwal Kuliah (Yang TIDAK dicancel tanggal ini)
+      // A. Cek Konflik Jadwal Kuliah
       const classConflict = masterSchedules.find(sch => {
         if (sch.roomId !== room.id) return false;
-        // JIKA sudah dicancel di tanggal ini, berarti TIDAK konflik (Ruangan kosong)
-        if (sch.cancellations.length > 0) return false; 
+        if (sch.cancellations.length > 0) return false; // Skip jika sudah dicancel
 
         const schStart = timeToMinutes(sch.jamMulai);
         const schEnd = timeToMinutes(sch.jamSelesai);
@@ -145,9 +143,11 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
 
       if (classConflict) {
         isAvailable = false;
-        conflictReason = `Kuliah: ${classConflict.mataKuliah}`;
+        // REVISI: Menambahkan Jam Berlangsung agar user tahu kapan selesai
+        conflictReason = `Kuliah: ${classConflict.mataKuliah} (${classConflict.jamMulai} - ${classConflict.jamSelesai})`;
       }
 
+      // B. Cek Konflik Booking User Lain
       if (isAvailable) {
         const bookingConflict = activeBookings.find(b => {
           if (b.roomId !== room.id) return false;
@@ -155,18 +155,25 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
           const bEnd = timeToMinutes(b.endTime);
           return (reqStart < bEnd && reqEnd > bStart);
         });
+
         if (bookingConflict) {
           isAvailable = false;
-          conflictReason = "Sudah Dipesan";
+          // REVISI: Menambahkan Jam Booking
+          conflictReason = `Booking: ${bookingConflict.userName} (${bookingConflict.startTime} - ${bookingConflict.endTime})`;
         }
       }
+
       return { ...room, isAvailable, conflictReason };
     });
+
     return { success: true, data: results };
+
   } catch (error) {
+    console.error(error);
     return { success: false, message: "Gagal cek room." };
   }
 }
+
 
 export async function bookRoomAction(bookingData) {
    // Logic sama persis dengan sebelumnya
