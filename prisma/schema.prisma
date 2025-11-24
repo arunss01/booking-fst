@@ -5,64 +5,62 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Kita gunakan kunci yang sama untuk keduanya agar tidak error "Variable not found"
-  url       = env("POSTGRES_PRISMA_URL")
-  directUrl = env("POSTGRES_PRISMA_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// 1. Model User (Mahasiswa & Admin)
+// 1. Model User
 model User {
   id        String   @id @default(cuid())
   nim       String   @unique
   password  String
   name      String
-  role      String   @default("STUDENT") // "STUDENT" atau "ADMIN"
-  major     String   // "Sains Data", dll
-  kelas     String   // "3A", "1B"
-  points    Int      @default(0) // Saldo Poin SKS
+  role      String   @default("STUDENT")
+  major     String
+  kelas     String
+  points    Int      @default(0)
   
-  bookings  Booking[] // Relasi ke history booking
+  bookings  Booking[]
 }
 
 // 2. Model Ruangan
 model Room {
-  id        String   @id // ID manual: "A-201"
+  id        String   @id
   name      String
   floor     Int
   capacity  Int
-  type      String   // "Classroom" atau "Laboratorium"
+  type      String
   
   bookings  Booking[]
   schedules Schedule[]
 }
 
-// 3. Model Jadwal Kuliah (Untuk dikonversi jadi Poin)
+// 3. Model Jadwal Kuliah
 model Schedule {
   id          Int      @id @default(autoincrement())
   mataKuliah  String
   dosen       String
-  kelas       String   // "3A"
-  major       String   // "Sains Data"
-  hari        String   // "SENIN", "SELASA"
-  jamMulai    String   // "07:00"
-  jamSelesai  String   // "09:30"
+  kelas       String
+  major       String
+  hari        String
+  jamMulai    String
+  jamSelesai  String
   sks         Int
-  status      String   @default("active") // "active" atau "cancelled"
+  status      String   @default("active")
   
   roomId      String
   room        Room     @relation(fields: [roomId], references: [id])
 }
 
-// 4. Model Transaksi Booking
+// 4. Model Booking
 model Booking {
   id        String   @id @default(cuid())
-  bookingId String   @unique // BKG-2025...
-  date      String   // "2025-11-25"
-  startTime String   // "09:00"
-  endTime   String   // "11:00"
-  duration  Int      // Poin yang dipakai
-  status    String   @default("TERKONFIRMASI") // "TERKONFIRMASI", "DIBATALKAN"
+  bookingId String   @unique
+  date      String
+  startTime String
+  endTime   String
+  duration  Int
+  status    String   @default("TERKONFIRMASI")
   createdAt DateTime @default(now())
 
   userId    String
@@ -71,8 +69,8 @@ model Booking {
   roomId    String
   room      Room     @relation(fields: [roomId], references: [id])
   
-  // Data snapshot (disimpan redundan agar history tetap aman walau data master berubah)
-  roomName  String   
+  // Data Snapshot
+  roomName  String
   floor     Int
   userName  String
   userMajor String
