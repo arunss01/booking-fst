@@ -5,10 +5,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  // Pastikan ini env(...), BUKAN link panjang postgres://...
-  url      = env("POSTGRES_PRISMA_URL") 
-  directUrl = env("POSTGRES_URL_NON_POOLING") // Jika ada
+  provider  = "postgresql"
+  // Kita gunakan kunci yang sama untuk keduanya agar tidak error "Variable not found"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_PRISMA_URL")
 }
 
 // 1. Model User (Mahasiswa & Admin)
