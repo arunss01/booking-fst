@@ -1,0 +1,80 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Pastikan ini env(...), BUKAN link panjang postgres://...
+  url      = env("POSTGRES_PRISMA_URL") 
+  directUrl = env("POSTGRES_URL_NON_POOLING") // Jika ada
+}
+
+// 1. Model User (Mahasiswa & Admin)
+model User {
+  id        String   @id @default(cuid())
+  nim       String   @unique
+  password  String
+  name      String
+  role      String   @default("STUDENT") // "STUDENT" atau "ADMIN"
+  major     String   // "Sains Data", dll
+  kelas     String   // "3A", "1B"
+  points    Int      @default(0) // Saldo Poin SKS
+  
+  bookings  Booking[] // Relasi ke history booking
+}
+
+// 2. Model Ruangan
+model Room {
+  id        String   @id // ID manual: "A-201"
+  name      String
+  floor     Int
+  capacity  Int
+  type      String   // "Classroom" atau "Laboratorium"
+  
+  bookings  Booking[]
+  schedules Schedule[]
+}
+
+// 3. Model Jadwal Kuliah (Untuk dikonversi jadi Poin)
+model Schedule {
+  id          Int      @id @default(autoincrement())
+  mataKuliah  String
+  dosen       String
+  kelas       String   // "3A"
+  major       String   // "Sains Data"
+  hari        String   // "SENIN", "SELASA"
+  jamMulai    String   // "07:00"
+  jamSelesai  String   // "09:30"
+  sks         Int
+  status      String   @default("active") // "active" atau "cancelled"
+  
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id])
+}
+
+// 4. Model Transaksi Booking
+model Booking {
+  id        String   @id @default(cuid())
+  bookingId String   @unique // BKG-2025...
+  date      String   // "2025-11-25"
+  startTime String   // "09:00"
+  endTime   String   // "11:00"
+  duration  Int      // Poin yang dipakai
+  status    String   @default("TERKONFIRMASI") // "TERKONFIRMASI", "DIBATALKAN"
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id])
+  
+  // Data snapshot (disimpan redundan agar history tetap aman walau data master berubah)
+  roomName  String   
+  floor     Int
+  userName  String
+  userMajor String
+  userClass String
+}
