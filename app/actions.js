@@ -17,8 +17,8 @@ export async function loginUser(nim, password) {
     }
     return { success: false, message: "NIM atau Password salah." };
   } catch (error) {
-    console.error("Login Error:", error);
-    return { success: false, message: "Terjadi kesalahan server." };
+    console.error("LOGIN ERROR DETECTED:", error); // <-- Ini akan muncul di Log Vercel
+    return { success: false, message: "Server Error: " + error.message }; // <-- Ini akan muncul di Layar HP
   }
 }
 
