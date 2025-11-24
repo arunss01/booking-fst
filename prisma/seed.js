@@ -1,16 +1,18 @@
 // prisma/seed.js
-require('dotenv').config(); // Pastikan baris ini ada jika run di local
+require('dotenv').config(); 
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Start seeding: Users Baru & Jadwal Full Seminggu...')
 
-  // 1. BERSIHKAN DATA LAMA
-  await prisma.booking.deleteMany()
-  await prisma.schedule.deleteMany()
-  await prisma.user.deleteMany()
-  await prisma.room.deleteMany()
+  // 1. BERSIHKAN DATA LAMA (URUTAN INI PENTING!)
+  // Hapus anak-anaknya dulu (Booking & Cancellation), baru induknya
+  await prisma.booking.deleteMany()           // Hapus Booking dulu
+  await prisma.classCancellation.deleteMany() // Hapus Cancellation dulu (INI YANG TADI KURANG)
+  await prisma.schedule.deleteMany()          // Baru aman hapus Schedule
+  await prisma.user.deleteMany()              // Hapus User
+  await prisma.room.deleteMany()              // Hapus Room
   
   console.log('🗑️  Database dibersihkan.')
 
@@ -36,45 +38,33 @@ async function main() {
   }
   console.log('✅ Rooms created.')
 
-  // 3. CREATE USERS (Sesuai Request Terbaru)
+  // 3. CREATE USERS
   const users = [
-    // 1. Aruna (Sains Data 3A)
     { nim: "12345", name: "Aruna (SDT 3A)", kelas: "3A", major: "Sains Data", role: "STUDENT" },
-    // 2. Melani (Sains Data 1A)
     { nim: "10001", name: "Melani (SDT 1A)", kelas: "1A", major: "Sains Data", role: "STUDENT" },
-    // 3. Fiya (Sains Data 5A)
     { nim: "10002", name: "Fiya (SDT 5A)", kelas: "5A", major: "Sains Data", role: "STUDENT" },
-    // 4. Haya (Teknologi Pangan 1B)
     { nim: "67890", name: "Haya (TPG 1B)", kelas: "1B", major: "Teknologi Pangan", role: "STUDENT" },
-    // 5. Firda (Teknologi Pangan 5A)
     { nim: "20001", name: "Firda (TPG 5A)", kelas: "5A", major: "Teknologi Pangan", role: "STUDENT" },
-    
-    // --- User Tambahan (Pelengkap 10 Kelas) ---
-    // 6. Citra (Ilmu Lingkungan 5A)
+    // Tambahan User agar lengkap 10 Kelas
     { nim: "11223", name: "Citra (ILK 5A)", kelas: "5A", major: "Ilmu Lingkungan", role: "STUDENT" },
-    // 7. Indah (Ilmu Lingkungan 3A)
     { nim: "30001", name: "Indah (ILK 3A)", kelas: "3A", major: "Ilmu Lingkungan", role: "STUDENT" },
-    // 8. Dina (Biologi 3A)
     { nim: "44556", name: "Dina (BIO 3A)", kelas: "3A", major: "Biologi", role: "STUDENT" },
-    // 9. Joko (Biologi 5A)
     { nim: "40001", name: "Joko (BIO 5A)", kelas: "5A", major: "Biologi", role: "STUDENT" },
-    // 10. Eko (Informatika 1A)
     { nim: "77889", name: "Eko (INF 1A)", kelas: "1A", major: "Informatika", role: "STUDENT" },
-    
     // ADMIN
     { nim: "admin", name: "Super Admin", kelas: "-", major: "Staff Akademik", role: "ADMIN", password: "admin123" }
   ]
 
   for (const u of users) {
     await prisma.user.create({
-      data: { ...u, password: u.password || "123" } // Default password '123'
+      data: { ...u, password: u.password || "123" }
     })
   }
-  console.log('✅ Users created (Aruna, Melani, Firda, Fiya, Haya, dll).')
+  console.log('✅ Users created.')
 
   // 4. JADWAL FULL SEMINGGU (10 KELAS)
   const schedules = [
-    // --- 1. SAINS DATA 3A (Kelas Aruna) ---
+    // --- 1. SAINS DATA 3A (Aruna) ---
     { mataKuliah: "Metode Numerik", kelas: "3A", major: "Sains Data", roomId: "A-202", hari: "SENIN", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Fuad Luky A., M.Pd.", sks: 3 },
     { mataKuliah: "Visualisasi Data", kelas: "3A", major: "Sains Data", roomId: "A-202", hari: "SENIN", jamMulai: "09:30", jamSelesai: "12:00", dosen: "Rizky K., M.Si.", sks: 3 },
     { mataKuliah: "R untuk Sains Data", kelas: "3A", major: "Sains Data", roomId: "A-203", hari: "SENIN", jamMulai: "15:00", jamSelesai: "17:30", dosen: "Dr. Aji Joko B.P.", sks: 3 },
@@ -85,7 +75,7 @@ async function main() {
     { mataKuliah: "Kecerdasan Buatan", kelas: "3A", major: "Sains Data", roomId: "Lab-402", hari: "KAMIS", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Febrianta S.N., M.Kom.", sks: 3 },
     { mataKuliah: "Analisis Multivariat", kelas: "3A", major: "Sains Data", roomId: "A-201", hari: "JUMAT", jamMulai: "08:00", jamSelesai: "10:30", dosen: "Rizky K., M.Si.", sks: 3 },
 
-    // --- 2. SAINS DATA 1A (Kelas Melani) ---
+    // --- 2. SAINS DATA 1A (Melani) ---
     { mataKuliah: "Statistika", kelas: "1A", major: "Sains Data", roomId: "A-202", hari: "SENIN", jamMulai: "12:30", jamSelesai: "15:00", dosen: "Zulfanita D.R., M.Si.", sks: 3 },
     { mataKuliah: "Kimia Dasar", kelas: "1A", major: "Sains Data", roomId: "Lab-403", hari: "SENIN", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Anang A.L., M.Eng.", sks: 2 },
     { mataKuliah: "Fisika Dasar", kelas: "1A", major: "Sains Data", roomId: "Lab-404", hari: "SENIN", jamMulai: "07:00", jamSelesai: "08:40", dosen: "Reno N., M.Pd.", sks: 2 },
@@ -95,7 +85,7 @@ async function main() {
     { mataKuliah: "Bahasa Indonesia", kelas: "1A", major: "Sains Data", roomId: "A-304", hari: "KAMIS", jamMulai: "10:00", jamSelesai: "11:40", dosen: "Tim Dosen MKU", sks: 2 },
     { mataKuliah: "Pancasila", kelas: "1A", major: "Sains Data", roomId: "A-304", hari: "JUMAT", jamMulai: "08:00", jamSelesai: "09:40", dosen: "Dr. Supriyanto", sks: 2 },
 
-    // --- 3. SAINS DATA 5A (Kelas Fiya) ---
+    // --- 3. SAINS DATA 5A (Fiya) ---
     { mataKuliah: "Pemodelan Sistem", kelas: "5A", major: "Sains Data", roomId: "A-204", hari: "SENIN", jamMulai: "14:40", jamSelesai: "16:20", dosen: "Febrianta S.N., M.Kom.", sks: 2 },
     { mataKuliah: "Praktikum Media Kom", kelas: "5A", major: "Sains Data", roomId: "Lab-402", hari: "SENIN", jamMulai: "07:00", jamSelesai: "09:50", dosen: "Febrianta S.N., M.Kom.", sks: 1 },
     { mataKuliah: "Rekayasa Perangkat Lunak", kelas: "5A", major: "Sains Data", roomId: "A-205", hari: "SELASA", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Tigus J.B., M.Kom.", sks: 2 },
@@ -104,7 +94,7 @@ async function main() {
     { mataKuliah: "Data Mining", kelas: "5A", major: "Sains Data", roomId: "Lab-402", hari: "RABU", jamMulai: "09:00", jamSelesai: "11:30", dosen: "Rizky K., M.Si.", sks: 3 },
     { mataKuliah: "Machine Learning", kelas: "5A", major: "Sains Data", roomId: "Lab-402", hari: "KAMIS", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Febrianta S.N., M.Kom.", sks: 3 },
 
-    // --- 4. TEKNOLOGI PANGAN 1B (Kelas Haya) ---
+    // --- 4. TEKNOLOGI PANGAN 1B (Haya) ---
     { mataKuliah: "Statistika", kelas: "1B", major: "Teknologi Pangan", roomId: "A-202", hari: "SENIN", jamMulai: "15:00", jamSelesai: "17:30", dosen: "Zulfanita D.R., M.Si.", sks: 3 },
     { mataKuliah: "Kimia Dasar", kelas: "1B", major: "Teknologi Pangan", roomId: "A-203", hari: "SENIN", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Faida Zuhria, S.T.M.Eng.", sks: 2 },
     { mataKuliah: "Fisika Dasar", kelas: "1B", major: "Teknologi Pangan", roomId: "A-203", hari: "SENIN", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Yesi Ihdina F., M.Farm.", sks: 2 },
@@ -114,7 +104,7 @@ async function main() {
     { mataKuliah: "Pengantar Tekpang", kelas: "1B", major: "Teknologi Pangan", roomId: "A-302", hari: "RABU", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Wulan Suci W., M.Sc.", sks: 2 },
     { mataKuliah: "Matematika Dasar", kelas: "1B", major: "Teknologi Pangan", roomId: "A-301", hari: "KAMIS", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Isnan N., M.Kom.", sks: 2 },
 
-    // --- 5. TEKNOLOGI PANGAN 5A (Kelas Firda) ---
+    // --- 5. TEKNOLOGI PANGAN 5A (Firda) ---
     { mataKuliah: "Metabolisme Pangan", kelas: "5A", major: "Teknologi Pangan", roomId: "Lab-402", hari: "SENIN", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Wulan Suci W., M.Sc.", sks: 3 },
     { mataKuliah: "Teknologi Minyak", kelas: "5A", major: "Teknologi Pangan", roomId: "A-301", hari: "SELASA", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Wulan Suci W., M.Sc.", sks: 2 },
     { mataKuliah: "Rekayasa Proses", kelas: "5A", major: "Teknologi Pangan", roomId: "Lab-403", hari: "SELASA", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Sadewa Aziz D., M.Sc.", sks: 2 },
@@ -122,7 +112,7 @@ async function main() {
     { mataKuliah: "Analisis Pangan", kelas: "5A", major: "Teknologi Pangan", roomId: "Lab-403", hari: "KAMIS", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Sadewa Aziz D., M.Sc.", sks: 3 },
     { mataKuliah: "Teknologi Fermentasi", kelas: "5A", major: "Teknologi Pangan", roomId: "Lab-403", hari: "JUMAT", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Sri Utami, M.Si.", sks: 3 },
 
-    // --- 6. ILMU LINGKUNGAN 5A (Kelas Citra) ---
+    // --- 6. ILMU LINGKUNGAN 5A (Citra) ---
     { mataKuliah: "Konservasi Energi", kelas: "5A", major: "Ilmu Lingkungan", roomId: "Lab-401", hari: "SENIN", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Septin Puji A., Ph.D.", sks: 3 },
     { mataKuliah: "Pengelolaan SDA", kelas: "5A", major: "Ilmu Lingkungan", roomId: "Lab-401", hari: "SENIN", jamMulai: "13:00", jamSelesai: "14:40", dosen: "Ronnawan J., M.Si.", sks: 2 },
     { mataKuliah: "Limbah Domestik", kelas: "5A", major: "Ilmu Lingkungan", roomId: "Lab-401", hari: "SENIN", jamMulai: "16:20", jamSelesai: "18:00", dosen: "Widyanti Y., M.T.", sks: 2 },
@@ -132,7 +122,7 @@ async function main() {
     { mataKuliah: "AMDAL", kelas: "5A", major: "Ilmu Lingkungan", roomId: "A-203", hari: "RABU", jamMulai: "09:00", jamSelesai: "11:30", dosen: "Widyanti Y., M.T.", sks: 3 },
     { mataKuliah: "Hukum Lingkungan", kelas: "5A", major: "Ilmu Lingkungan", roomId: "A-304", hari: "KAMIS", jamMulai: "13:00", jamSelesai: "14:40", dosen: "Tim Dosen Hukum", sks: 2 },
 
-    // --- 7. ILMU LINGKUNGAN 3A (Kelas Indah) ---
+    // --- 7. ILMU LINGKUNGAN 3A (Indah) ---
     { mataKuliah: "Lab Lingkungan", kelas: "3A", major: "Ilmu Lingkungan", roomId: "A-301", hari: "SENIN", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Purwono, M.Si.", sks: 2 },
     { mataKuliah: "Eksplorasi SDA", kelas: "3A", major: "Ilmu Lingkungan", roomId: "A-301", hari: "SENIN", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Angga Dwi P., M.Biotech.", sks: 2 },
     { mataKuliah: "Konservasi Alam Islam", kelas: "3A", major: "Ilmu Lingkungan", roomId: "A-302", hari: "SELASA", jamMulai: "14:40", jamSelesai: "16:20", dosen: "Ika Feni S., M.Sc.", sks: 2 },
@@ -140,7 +130,7 @@ async function main() {
     { mataKuliah: "Ekologi", kelas: "3A", major: "Ilmu Lingkungan", roomId: "Lab-401", hari: "RABU", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Purwono, M.Si.", sks: 3 },
     { mataKuliah: "Klimatologi Dasar", kelas: "3A", major: "Ilmu Lingkungan", roomId: "A-204", hari: "KAMIS", jamMulai: "10:00", jamSelesai: "11:40", dosen: "Ronnawan J., M.Si.", sks: 2 },
 
-    // --- 8. BIOLOGI 3A (Kelas Dina) ---
+    // --- 8. BIOLOGI 3A (Dina) ---
     { mataKuliah: "Bioteknologi Pangan", kelas: "3A", major: "Biologi", roomId: "A-302", hari: "SENIN", jamMulai: "07:00", jamSelesai: "08:40", dosen: "Faizal Jannu A.S.", sks: 2 },
     { mataKuliah: "Instrumen Biotek", kelas: "3A", major: "Biologi", roomId: "A-302", hari: "SENIN", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Dicka Wahyu S., M.Si.", sks: 2 },
     { mataKuliah: "Kimia Bioanalisis", kelas: "3A", major: "Biologi", roomId: "A-303", hari: "SELASA", jamMulai: "07:00", jamSelesai: "08:40", dosen: "Dini Achnafani, M.Si.", sks: 2 },
@@ -149,7 +139,7 @@ async function main() {
     { mataKuliah: "Genetika", kelas: "3A", major: "Biologi", roomId: "A-205", hari: "RABU", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Dini Achnafani, M.Si.", sks: 3 },
     { mataKuliah: "Mikrobiologi", kelas: "3A", major: "Biologi", roomId: "Lab-403", hari: "KAMIS", jamMulai: "07:00", jamSelesai: "09:30", dosen: "Faizal Jannu A.S.", sks: 3 },
 
-    // --- 9. BIOLOGI 5A (Kelas Joko) ---
+    // --- 9. BIOLOGI 5A (Joko) ---
     { mataKuliah: "Regulasi Biotek", kelas: "5A", major: "Biologi", roomId: "A-301", hari: "SENIN", jamMulai: "07:00", jamSelesai: "08:40", dosen: "Angga Dwi P., M.Biotech.", sks: 2 },
     { mataKuliah: "Rekayasa Genetika", kelas: "5A", major: "Biologi", roomId: "A-302", hari: "SENIN", jamMulai: "08:40", jamSelesai: "10:20", dosen: "Sri Utami, M.Si.", sks: 2 },
     { mataKuliah: "DNA Forensik", kelas: "5A", major: "Biologi", roomId: "A-302", hari: "SENIN", jamMulai: "13:00", jamSelesai: "14:40", dosen: "Dicka Wahyu S., M.Si.", sks: 2 },
@@ -158,7 +148,7 @@ async function main() {
     { mataKuliah: "Bioinformatika", kelas: "5A", major: "Biologi", roomId: "Lab-402", hari: "RABU", jamMulai: "13:00", jamSelesai: "15:30", dosen: "Febrianta S.N., M.Kom.", sks: 3 },
     { mataKuliah: "Kultur Jaringan", kelas: "5A", major: "Biologi", roomId: "Lab-401", hari: "KAMIS", jamMulai: "08:40", jamSelesai: "11:20", dosen: "Sri Utami, M.Si.", sks: 3 },
 
-    // --- 10. INFORMATIKA 1A (Kelas Eko) ---
+    // --- 10. INFORMATIKA 1A (Eko) ---
     { mataKuliah: "Matematika", kelas: "1A", major: "Informatika", roomId: "A-201", hari: "SENIN", jamMulai: "07:00", jamSelesai: "08:40", dosen: "Isnan N., M.Kom.", sks: 2 },
     { mataKuliah: "Fisika Dasar", kelas: "1A", major: "Informatika", roomId: "Lab-404", hari: "SENIN", jamMulai: "10:20", jamSelesai: "12:00", dosen: "Moch Bagoes P., S.Kom.", sks: 2 },
     { mataKuliah: "Kimia Dasar", kelas: "1A", major: "Informatika", roomId: "Lab-404", hari: "SENIN", jamMulai: "13:00", jamSelesai: "14:40", dosen: "Anang A.L., M.Eng.", sks: 2 },
@@ -171,7 +161,7 @@ async function main() {
   for (const s of schedules) {
     await prisma.schedule.create({ data: s })
   }
-  console.log(`✅ ${schedules.length} Real Schedules (Full Week) created.`)
+  console.log(`✅ ${schedules.length} Schedules created.`)
 
   console.log('🏁 Seeding finished successfully. Database is ready!')
 }

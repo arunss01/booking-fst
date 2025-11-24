@@ -3,10 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")        // Sesuai Foto Baris 2
+  directUrl = env("POSTGRES_URL_NON_POOLING")   // Sesuai Foto Baris 3
 }
 
+// ... (Biarkan model User, Room, Schedule, Booking dll tetap ada di bawah sini)
 model User {
   id        String   @id @default(cuid())
   nim       String   @unique
@@ -16,7 +18,6 @@ model User {
   major     String
   kelas     String
   points    Int      @default(0)
-  
   bookings  Booking[]
 }
 
@@ -26,7 +27,6 @@ model Room {
   floor     Int
   capacity  Int
   type      String
-  
   bookings  Booking[]
   schedules Schedule[]
 }
@@ -41,21 +41,16 @@ model Schedule {
   jamMulai    String
   jamSelesai  String
   sks         Int
-  status      String   @default("active") // Status Default
-  
+  status      String   @default("active")
   roomId      String
   room        Room     @relation(fields: [roomId], references: [id])
-  
-  // Relasi ke tabel pembatalan spesifik
   cancellations ClassCancellation[]
 }
 
-// TABEL BARU: Mencatat tanggal spesifik yang dibatalkan
 model ClassCancellation {
   id         String   @id @default(cuid())
-  date       String   // Format: "2025-11-24"
+  date       String 
   createdAt  DateTime @default(now())
-  
   scheduleId Int
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
 }
@@ -69,13 +64,10 @@ model Booking {
   duration  Int
   status    String   @default("TERKONFIRMASI")
   createdAt DateTime @default(now())
-
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  
   roomId    String
   room      Room     @relation(fields: [roomId], references: [id])
-  
   roomName  String
   floor     Int
   userName  String
