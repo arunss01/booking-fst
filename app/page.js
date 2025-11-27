@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, Settings, Edit3, Save, Filter } from 'lucide-react';
+import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, Edit3, Filter } from 'lucide-react';
 import { loginUser, getInitialData, getAllSchedules, updateScheduleAction, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
+// --- CONTEXT ---
 const BookingContext = createContext();
 
 const BookingProvider = ({ children }) => {
@@ -12,7 +13,6 @@ const BookingProvider = ({ children }) => {
   const [myBookings, setMyBookings] = useState([]);
   const [authError, setAuthError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
   const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
 
   const login = async (nimInput, passwordInput) => {
@@ -21,7 +21,6 @@ const BookingProvider = ({ children }) => {
     if (result.success) {
       setUser(result.user);
       setAuthError("");
-      // Jika bukan admin, tarik data user. Jika admin, nanti ditarik di komponen admin.
       if (result.user.role !== 'ADMIN') {
           await refreshUserData(result.user.id, result.user.kelas, result.user.major, dashboardDate);
       }
@@ -48,12 +47,11 @@ const BookingProvider = ({ children }) => {
     if (user && user.role !== 'ADMIN') refreshUserData(user.id, user.kelas, user.major, dashboardDate);
   }, [dashboardDate]);
 
-  // ACTIONS WRAPPER
   const cancelSchedule = async (id, sks) => {
     const result = await cancelScheduleAction(user.id, id, sks, dashboardDate);
     if (result.success) {
       await refreshUserData(user.id, user.kelas, user.major, dashboardDate);
-      return { success: true };
+      return { success: true, message: "Jadwal berhasil dibatalkan." };
     }
     return { success: false, message: result.message };
   };
@@ -62,7 +60,7 @@ const BookingProvider = ({ children }) => {
       const result = await cancelBookingAction(user.id, bookingId, duration);
       if (result.success) {
           await refreshUserData(user.id, user.kelas, user.major, dashboardDate);
-          return { success: true };
+          return { success: true, message: "Booking dibatalkan." };
       }
       return { success: false, message: result.message };
   };
@@ -99,7 +97,7 @@ const BookingProvider = ({ children }) => {
 
 const useBooking = () => useContext(BookingContext);
 
-// --- UI COMPONENTS ---
+// --- COMPONENTS ---
 
 const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger" }) => {
     if (!isOpen) return null;
@@ -122,254 +120,7 @@ const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "La
     );
 };
 
-// --- ADMIN DASHBOARD (NEW) ---
-const AdminDashboard = () => {
-    const { user } = useBooking();
-    const [allSchedules, setAllSchedules] = useState([]);
-    const [rooms, setRooms] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    // Filter State
-    const [filterKelas, setFilterKelas] = useState("Semua");
-    const [filterDay, setFilterDay] = useState("Semua");
-
-    // Edit State
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editData, setEditData] = useState(null);
-
-    // Load Data
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            const res = await getAllSchedules();
-            if (res.success) {
-                setAllSchedules(res.schedules);
-                setRooms(res.rooms);
-            }
-            setLoading(false);
-        };
-        load();
-    }, []);
-
-    const handleEditClick = (sch) => {
-        setEditData(sch);
-        setEditModalOpen(true);
-    };
-
-    const handleSaveEdit = async () => {
-        const res = await updateScheduleAction(editData.id, editData);
-        if (res.success) {
-            alert("Jadwal berhasil diperbarui!");
-            setEditModalOpen(false);
-            // Reload local data
-            setAllSchedules(prev => prev.map(s => s.id === editData.id ? {...editData, room: rooms.find(r => r.id === editData.roomId)} : s));
-        } else {
-            alert("Gagal update.");
-        }
-    };
-
-    // Filter Logic
-    const filteredSchedules = allSchedules.filter(s => {
-        return (filterKelas === "Semua" || s.kelas === filterKelas) &&
-               (filterDay === "Semua" || s.hari === filterDay);
-    });
-
-    const uniqueClasses = [...new Set(allSchedules.map(s => s.kelas))].sort();
-
-    return (
-        <div className="animate-fade-in pb-20">
-            {/* Admin Edit Modal */}
-            {editModalOpen && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-                        <h3 className="font-bold text-xl mb-4 text-slate-800 flex items-center gap-2"><Edit3 size={20}/> Edit Jadwal Paten</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Mata Kuliah</label>
-                                <input className="w-full border p-2 rounded" value={editData.mataKuliah} onChange={e => setEditData({...editData, mataKuliah: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Dosen</label>
-                                <input className="w-full border p-2 rounded" value={editData.dosen} onChange={e => setEditData({...editData, dosen: e.target.value})} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Hari</label>
-                                    <select className="w-full border p-2 rounded" value={editData.hari} onChange={e => setEditData({...editData, hari: e.target.value})}>
-                                        {['SENIN','SELASA','RABU','KAMIS','JUMAT'].map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Ruangan</label>
-                                    <select className="w-full border p-2 rounded" value={editData.roomId} onChange={e => setEditData({...editData, roomId: e.target.value})}>
-                                        {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Jam Mulai</label>
-                                    <input type="time" className="w-full border p-2 rounded" value={editData.jamMulai} onChange={e => setEditData({...editData, jamMulai: e.target.value})} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Jam Selesai</label>
-                                    <input type="time" className="w-full border p-2 rounded" value={editData.jamSelesai} onChange={e => setEditData({...editData, jamSelesai: e.target.value})} />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-2 mt-6">
-                            <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Batal</button>
-                            <button onClick={handleSaveEdit} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold">Simpan Perubahan</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Admin Dashboard</h2>
-                <p className="text-slate-500 text-sm mb-6">Kelola Jadwal Paten Perkuliahan (Master Schedule).</p>
-                
-                {/* Filters */}
-                <div className="flex flex-wrap gap-4 items-end">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 mb-1">Filter Kelas</label>
-                        <select value={filterKelas} onChange={e => setFilterKelas(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]">
-                            <option value="Semua">Semua Kelas</option>
-                            {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 mb-1">Filter Hari</label>
-                        <select value={filterDay} onChange={e => setFilterDay(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]">
-                            <option value="Semua">Semua Hari</option>
-                            {['SENIN','SELASA','RABU','KAMIS','JUMAT'].map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
-                {loading ? (
-                    <div className="p-10 text-center text-slate-400">Memuat data jadwal...</div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-800 text-white uppercase text-xs font-bold">
-                                <tr>
-                                    <th className="p-4">Kelas</th>
-                                    <th className="p-4">Hari/Jam</th>
-                                    <th className="p-4">Mata Kuliah</th>
-                                    <th className="p-4">Ruang</th>
-                                    <th className="p-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredSchedules.map(sch => (
-                                    <tr key={sch.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="p-4 font-bold text-emerald-600">{sch.kelas} <br/><span className="text-slate-400 text-[10px] font-normal uppercase">{sch.major}</span></td>
-                                        <td className="p-4">
-                                            <span className="font-bold text-slate-700 block">{sch.hari}</span>
-                                            <span className="text-xs text-slate-500">{sch.jamMulai} - {sch.jamSelesai}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="font-bold text-slate-800">{sch.mataKuliah}</div>
-                                            <div className="text-xs text-slate-500">{sch.dosen}</div>
-                                        </td>
-                                        <td className="p-4"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold border border-slate-200">{sch.room?.name}</span></td>
-                                        <td className="p-4 text-center">
-                                            <button onClick={() => handleEditClick(sch)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="Edit Jadwal">
-                                                <Edit3 size={18}/>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-// --- STUDENT PAGES (Existing, with Logo Update) ---
-
-const LoginPage = () => {
-  const { login, authError, isLoading } = useBooking();
-  const [nim, setNim] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center font-sans relative">
-      <div className="absolute inset-0 z-0">
-        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-emerald-900/60 backdrop-blur-[2px]"></div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 animate-fade-in-up">
-            <div className="text-center mb-8">
-                {/* LOGO GAMBAR */}
-                <div className="flex justify-center mx-auto mb-4">
-                    <img src="/LOGO RESERVEFY.png" alt="Reservefy Logo" className="w-48 h-auto object-contain drop-shadow-md"/>
-                </div>
-            </div>
-
-            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
-            
-            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
-                <div className="relative">
-                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
-                <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                </div>
-            </div>
-            <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
-                {isLoading ? 'Memproses...' : 'Masuk'}
-            </button>
-            </form>
-            
-            <div className="mt-8 text-center pt-6 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by MAFFH Team</p>
-            </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const DashboardPage = ({ onChangePage }) => {
-  const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate, checkAvailability } = useBooking();
-  const [showQuickCheck, setShowQuickCheck] = useState(false);
-  const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
-  
-  const isSchedulePast = (timeStr) => {
-      const now = new Date();
-      const selectedDate = new Date(dashboardDate);
-      if (selectedDate.setHours(0,0,0,0) < now.setHours(0,0,0,0)) return true;
-      if (selectedDate.setHours(0,0,0,0) > now.setHours(0,0,0,0)) return false;
-      const [h, m] = timeStr.split(':').map(Number);
-      const scheduleTime = new Date();
-      scheduleTime.setHours(h, m, 0, 0);
-      return scheduleTime < new Date();
-  };
-
-  const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
-
-  // Quick Check Component
-  const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
+const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [duration, setDuration] = useState(1);
@@ -432,17 +183,19 @@ const DashboardPage = ({ onChangePage }) => {
                     {results && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {results.map(room => (
-                                <div key={room.id} className={`p-4 rounded-xl border-l-4 ${room.isAvailable ? 'border-emerald-500 bg-white shadow-sm hover:shadow-md' : 'border-red-500 bg-slate-50 opacity-80'} flex justify-between items-start transition-all`}>
-                                    <div>
+                                <div key={room.id} className={`p-4 rounded-xl border-l-4 ${room.isAvailable ? 'border-emerald-500 bg-white shadow-sm hover:shadow-md' : 'border-red-500 bg-slate-50 opacity-90'} flex justify-between items-start transition-all`}>
+                                    <div className="flex-1 pr-2">
                                         <h4 className="font-bold text-slate-800">{room.name}</h4>
                                         <p className="text-xs text-slate-500 mt-0.5">Lt. {room.floor} • Kap. {room.capacity}</p>
                                     </div>
                                     {room.isAvailable ? (
-                                        <span className="text-emerald-700 text-[10px] font-extrabold bg-emerald-100 px-2 py-1 rounded">KOSONG</span>
+                                        <span className="text-emerald-700 text-[10px] font-extrabold bg-emerald-100 px-2 py-1 rounded shrink-0">KOSONG</span>
                                     ) : (
-                                        <div className="text-right">
-                                            <span className="text-red-700 text-[10px] font-extrabold bg-red-100 px-2 py-1 rounded">TERISI</span>
-                                            <p className="text-[10px] text-red-500 mt-1 max-w-[100px] leading-tight truncate">{room.conflictReason}</p>
+                                        <div className="text-right shrink-0 flex flex-col items-end">
+                                            <span className="text-red-700 text-[10px] font-extrabold bg-red-100 px-2 py-1 rounded mb-1">TERISI</span>
+                                            <p className="text-[10px] text-red-600 font-medium leading-tight max-w-[140px] break-words text-right">
+                                                {room.conflictReason}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -453,7 +206,189 @@ const DashboardPage = ({ onChangePage }) => {
             </div>
         </div>
     );
+};
+
+// --- PAGES ---
+
+const AdminDashboard = () => {
+    const { user } = useBooking();
+    const [allSchedules, setAllSchedules] = useState([]);
+    const [rooms, setRooms] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filterKelas, setFilterKelas] = useState("Semua");
+    const [filterDay, setFilterDay] = useState("Semua");
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editData, setEditData] = useState(null);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            const res = await getAllSchedules();
+            if (res.success) {
+                setAllSchedules(res.schedules);
+                setRooms(res.rooms);
+            }
+            setLoading(false);
+        };
+        load();
+    }, []);
+
+    const handleEditClick = (sch) => {
+        setEditData(sch);
+        setEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        const res = await updateScheduleAction(editData.id, editData);
+        if (res.success) {
+            alert("Jadwal berhasil diperbarui!");
+            setEditModalOpen(false);
+            setAllSchedules(prev => prev.map(s => s.id === editData.id ? {...editData, room: rooms.find(r => r.id === editData.roomId)} : s));
+        } else {
+            alert("Gagal update.");
+        }
+    };
+
+    const filteredSchedules = allSchedules.filter(s => {
+        return (filterKelas === "Semua" || s.kelas === filterKelas) &&
+               (filterDay === "Semua" || s.hari === filterDay);
+    });
+
+    const uniqueClasses = [...new Set(allSchedules.map(s => s.kelas))].sort();
+
+    return (
+        <div className="animate-fade-in pb-20">
+            {editModalOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                        <h3 className="font-bold text-xl mb-4 text-slate-800 flex items-center gap-2"><Edit3 size={20}/> Edit Jadwal Paten</h3>
+                        <div className="space-y-4">
+                            <div><label className="block text-xs font-bold text-slate-500 mb-1">Mata Kuliah</label><input className="w-full border p-2 rounded" value={editData.mataKuliah} onChange={e => setEditData({...editData, mataKuliah: e.target.value})} /></div>
+                            <div><label className="block text-xs font-bold text-slate-500 mb-1">Dosen</label><input className="w-full border p-2 rounded" value={editData.dosen} onChange={e => setEditData({...editData, dosen: e.target.value})} /></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">Hari</label><select className="w-full border p-2 rounded" value={editData.hari} onChange={e => setEditData({...editData, hari: e.target.value})}>{['SENIN','SELASA','RABU','KAMIS','JUMAT'].map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">Ruangan</label><select className="w-full border p-2 rounded" value={editData.roomId} onChange={e => setEditData({...editData, roomId: e.target.value})}>{rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">Jam Mulai</label><input type="time" className="w-full border p-2 rounded" value={editData.jamMulai} onChange={e => setEditData({...editData, jamMulai: e.target.value})} /></div>
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">Jam Selesai</label><input type="time" className="w-full border p-2 rounded" value={editData.jamSelesai} onChange={e => setEditData({...editData, jamSelesai: e.target.value})} /></div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Batal</button>
+                            <button onClick={handleSaveEdit} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Admin Dashboard</h2>
+                <p className="text-slate-500 text-sm mb-6">Kelola Jadwal Paten Perkuliahan (Master Schedule).</p>
+                <div className="flex flex-wrap gap-4 items-end">
+                    <div><label className="block text-xs font-bold text-slate-400 mb-1">Filter Kelas</label><select value={filterKelas} onChange={e => setFilterKelas(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]"><option value="Semua">Semua Kelas</option>{uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                    <div><label className="block text-xs font-bold text-slate-400 mb-1">Filter Hari</label><select value={filterDay} onChange={e => setFilterDay(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]"><option value="Semua">Semua Hari</option>{['SENIN','SELASA','RABU','KAMIS','JUMAT'].map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+                {loading ? <div className="p-10 text-center text-slate-400">Memuat data...</div> : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-800 text-white uppercase text-xs font-bold">
+                                <tr><th className="p-4">Kelas</th><th className="p-4">Hari/Jam</th><th className="p-4">Mata Kuliah</th><th className="p-4">Ruang</th><th className="p-4 text-center">Aksi</th></tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredSchedules.map(sch => (
+                                    <tr key={sch.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 font-bold text-emerald-600">{sch.kelas} <br/><span className="text-slate-400 text-[10px] font-normal uppercase">{sch.major}</span></td>
+                                        <td className="p-4"><span className="font-bold text-slate-700 block">{sch.hari}</span><span className="text-xs text-slate-500">{sch.jamMulai} - {sch.jamSelesai}</span></td>
+                                        <td className="p-4"><div className="font-bold text-slate-800">{sch.mataKuliah}</div><div className="text-xs text-slate-500">{sch.dosen}</div></td>
+                                        <td className="p-4"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold border border-slate-200">{sch.room?.name}</span></td>
+                                        <td className="p-4 text-center"><button onClick={() => handleEditClick(sch)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"><Edit3 size={18}/></button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const LoginPage = () => {
+  const { login, authError, isLoading } = useBooking();
+  const [nim, setNim] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center font-sans relative">
+      <div className="absolute inset-0 z-0">
+        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-emerald-900/60 backdrop-blur-[2px]"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md px-6">
+        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 animate-fade-in-up">
+            <div className="text-center mb-8">
+                <div className="flex justify-center mx-auto mb-4">
+                    <img src="/LOGO RESERVEFY.png" alt="Reservefy Logo" className="w-48 h-auto object-contain drop-shadow-md"/>
+                </div>
+            </div>
+
+            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
+            
+            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
+                <div className="relative">
+                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
+                <div className="relative">
+                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
+            </div>
+            <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
+                {isLoading ? 'Memproses...' : 'Masuk'}
+            </button>
+            </form>
+            
+            <div className="mt-8 text-center pt-6 border-t border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by MAFFH Team</p>
+            </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DashboardPage = ({ onChangePage }) => {
+  const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate, checkAvailability } = useBooking();
+  const [showQuickCheck, setShowQuickCheck] = useState(false);
+  const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
+  
+  const isSchedulePast = (timeStr) => {
+      const now = new Date();
+      const selectedDate = new Date(dashboardDate);
+      if (selectedDate.setHours(0,0,0,0) < now.setHours(0,0,0,0)) return true;
+      if (selectedDate.setHours(0,0,0,0) > now.setHours(0,0,0,0)) return false;
+      const [h, m] = timeStr.split(':').map(Number);
+      const scheduleTime = new Date();
+      scheduleTime.setHours(h, m, 0, 0);
+      return scheduleTime < new Date();
   };
+
+  const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
@@ -505,10 +440,11 @@ const DashboardPage = ({ onChangePage }) => {
           </div>
       </div>
 
-      {/* TABEL JADWAL */}
+      {/* TABEL JADWAL MINGGUAN (DENGAN HEADER HIJAU) */}
       <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
+            {/* HEADER WARNA EMERALD */}
             <thead className="bg-emerald-600 text-white uppercase text-xs font-bold tracking-wider">
                 <tr>
                 <th className="p-4 w-24">Hari</th>
@@ -547,7 +483,7 @@ const DashboardPage = ({ onChangePage }) => {
                         {isCancelled ? (
                             <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
                         ) : isPast ? (
-                            <span className="text-slate-300 cursor-not-allowed"><Lock size={18} className="mx-auto"/></span>
+                            <span className="text-slate-300 cursor-not-allowed" title="Sudah berlalu"><Lock size={18} className="mx-auto"/></span>
                         ) : (
                             <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border border-transparent hover:border-red-100">
                                 Cancel
@@ -599,7 +535,6 @@ const DashboardPage = ({ onChangePage }) => {
 };
 
 const BookingFlow = ({ onChangePage }) => {
-    // ... (Booking Flow Logic Same as before, keeping valid check)
     const { points, checkAvailability, executeBooking } = useBooking();
     const [step, setStep] = useState(0); 
     const [date, setDate] = useState('');
@@ -634,6 +569,7 @@ const BookingFlow = ({ onChangePage }) => {
       e.preventDefault();
       if (!date || !startTime) return alert("Mohon isi tanggal dan jam.");
       
+      // VALIDASI WAKTU BOOKING
       const today = new Date().toISOString().split('T')[0];
       if (date < today) return alert("Tidak bisa memilih tanggal yang sudah berlalu.");
 
@@ -810,7 +746,6 @@ function MainContent() {
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
-            {/* LOGO NAVBAR (Tanpa Teks Reservefy Tulis Tangan) */}
             <img src="/LOGO RESERVEFY.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"/>
           </div>
           <div className="flex items-center gap-4">
@@ -833,7 +768,6 @@ function MainContent() {
         )}
       </main>
       
-      {/* COPYRIGHT FOOTER */}
       <footer className="py-8 text-center border-t border-slate-200 mt-auto bg-white">
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Created by</p>
           <p className="text-slate-800 font-extrabold text-sm">MAFFH Team © 2025</p>

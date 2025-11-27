@@ -3,7 +3,8 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-// LOGIN
+// --- AUTH & DATA ---
+
 export async function loginUser(nim, password) {
   try {
     const user = await prisma.user.findUnique({ where: { nim } });
@@ -17,7 +18,6 @@ export async function loginUser(nim, password) {
   }
 }
 
-// DATA MAHASISWA
 export async function getInitialData(userId, userKelas, userMajor, dateStr) {
   try {
     const userData = await prisma.user.findUnique({ where: { id: userId } });
@@ -32,6 +32,7 @@ export async function getInitialData(userId, userKelas, userMajor, dateStr) {
       orderBy: { jamMulai: 'asc' }
     });
 
+    // Mapping status jika ada cancellation di tanggal tersebut
     const processedSchedules = rawSchedules.map(sch => ({
       ...sch,
       status: sch.cancellations.length > 0 ? 'cancelled' : 'active'
@@ -55,7 +56,6 @@ export async function getInitialData(userId, userKelas, userMajor, dateStr) {
 
 // --- KHUSUS ADMIN ---
 
-// 1. Ambil SEMUA Jadwal (Untuk Admin View)
 export async function getAllSchedules() {
     try {
         const schedules = await prisma.schedule.findMany({
@@ -63,18 +63,17 @@ export async function getAllSchedules() {
             orderBy: [
                 { major: 'asc' },
                 { kelas: 'asc' },
-                { hari: 'asc' }, // Senin dulu
+                { hari: 'asc' }, 
                 { jamMulai: 'asc' }
             ]
         });
-        const rooms = await prisma.room.findMany(); // Untuk dropdown edit
+        const rooms = await prisma.room.findMany();
         return { success: true, schedules, rooms };
     } catch (error) {
         return { success: false, message: error.message };
     }
 }
 
-// 2. Edit Jadwal Paten (Hanya Admin)
 export async function updateScheduleAction(scheduleId, newData) {
     try {
         await prisma.schedule.update({
@@ -99,9 +98,11 @@ export async function updateScheduleAction(scheduleId, newData) {
 
 export async function cancelScheduleAction(userId, scheduleId, sks, targetDateStr) {
   try {
+    // Catat tanggal merah di tabel Cancellation
     await prisma.classCancellation.create({
       data: { scheduleId: scheduleId, date: targetDateStr }
     });
+    // Tambah Poin
     await prisma.user.update({
       where: { id: userId },
       data: { points: { increment: sks } }
@@ -130,6 +131,7 @@ export async function cancelBookingAction(userId, bookingId, duration) {
   }
 }
 
+// LOGIKA CEK KETERSEDIAAN (REVISI: Detail Konflik)
 export async function checkRoomAvailabilityAction(date, startTimeStr, duration) {
   try {
     const timeToMinutes = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
@@ -140,11 +142,13 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
     const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
     const dayName = days[dateObj.getDay()];
 
+    // Ambil jadwal Master (kecuali yang di-cancel tanggal ini)
     const masterSchedules = await prisma.schedule.findMany({
       where: { hari: dayName },
       include: { cancellations: { where: { date: date } } }
     });
 
+    // Ambil Booking user lain yang aktif
     const activeBookings = await prisma.booking.findMany({
       where: { date: date, status: 'TERKONFIRMASI' }
     });
@@ -153,9 +157,10 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
       let isAvailable = true;
       let conflictReason = "";
 
+      // A. Cek Konflik Jadwal Kuliah
       const classConflict = masterSchedules.find(sch => {
         if (sch.roomId !== room.id) return false;
-        if (sch.cancellations.length > 0) return false; 
+        if (sch.cancellations.length > 0) return false; // Jika cancel, berarti kosong
         const schStart = timeToMinutes(sch.jamMulai);
         const schEnd = timeToMinutes(sch.jamSelesai);
         return (reqStart < schEnd && reqEnd > schStart);
@@ -163,9 +168,11 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
 
       if (classConflict) {
         isAvailable = false;
-        conflictReason = `Kuliah: ${classConflict.mataKuliah}`;
+        // REVISI: Tampilkan Info Lengkap (Matkul, Kelas, Jurusan, Jam)
+        conflictReason = `${classConflict.mataKuliah} (${classConflict.kelas}-${classConflict.major}) • ${classConflict.jamMulai}-${classConflict.jamSelesai}`;
       }
 
+      // B. Cek Konflik Booking
       if (isAvailable) {
         const bookingConflict = activeBookings.find(b => {
           if (b.roomId !== room.id) return false;
@@ -175,7 +182,8 @@ export async function checkRoomAvailabilityAction(date, startTimeStr, duration) 
         });
         if (bookingConflict) {
           isAvailable = false;
-          conflictReason = "Sudah Dipesan";
+          // REVISI: Tampilkan Info Lengkap Booking
+          conflictReason = `Booked: ${bookingConflict.userName} (${bookingConflict.userClass}-${bookingConflict.userMajor}) • ${bookingConflict.startTime}-${bookingConflict.endTime}`;
         }
       }
       return { ...room, isAvailable, conflictReason };
@@ -194,6 +202,7 @@ export async function bookRoomAction(bookingData) {
     const endTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 
     await prisma.user.update({ where: { id: userId }, data: { points: { decrement: duration } } });
+    
     const newBooking = await prisma.booking.create({
       data: {
         bookingId: `BKG-${Date.now()}`, userId, roomId, roomName, floor, date, startTime, endTime, duration,
