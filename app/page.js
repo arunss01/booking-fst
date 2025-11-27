@@ -364,7 +364,7 @@ const LoginPage = () => {
             </form>
             
             <div className="mt-8 text-center pt-6 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by MAFFH Team</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by FAHAM Team</p>
             </div>
         </div>
       </div>
@@ -770,7 +770,7 @@ function MainContent() {
       
       <footer className="py-8 text-center border-t border-slate-200 mt-auto bg-white">
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Created by</p>
-          <p className="text-slate-800 font-extrabold text-sm">MAFFH Team © 2025</p>
+          <p className="text-slate-800 font-extrabold text-sm">FAHAM Team © 2025</p>
       </footer>
     </div>
   );
