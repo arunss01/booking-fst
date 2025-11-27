@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, LayoutGrid } from 'lucide-react';
+import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight } from 'lucide-react';
 import { loginUser, getInitialData, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
 // --- CONTEXT ---
@@ -13,8 +13,6 @@ const BookingProvider = ({ children }) => {
   const [myBookings, setMyBookings] = useState([]);
   const [authError, setAuthError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Dashboard date hanya untuk referensi pembatalan, tampilan tetap mingguan
   const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
 
   const login = async (nimInput, passwordInput) => {
@@ -130,6 +128,18 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     const handleCheck = async (e) => {
         e.preventDefault();
         if(!date || !time) return;
+        
+        // VALIDASI WAKTU MASA LALU
+        const today = new Date().toISOString().split('T')[0];
+        if (date < today) return alert("Tanggal sudah lewat.");
+        if (date === today) {
+            const now = new Date();
+            const [h, m] = time.split(':').map(Number);
+            if (now.getHours() > h || (now.getHours() === h && now.getMinutes() > m)) {
+                return alert("Jam sudah lewat.");
+            }
+        }
+
         setLoading(true);
         const data = await onCheck(date, time, duration);
         setResults(data);
@@ -205,7 +215,6 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center font-sans relative">
-      {/* Background Image WA0007 */}
       <div className="absolute inset-0 z-0">
         <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-emerald-900/60 backdrop-blur-[2px]"></div>
@@ -260,15 +269,25 @@ const DashboardPage = ({ onChangePage }) => {
   const [showQuickCheck, setShowQuickCheck] = useState(false);
   const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
   
+  // LOGIKA VALIDASI WAKTU (JANGAN DIHAPUS)
   const isSchedulePast = (timeStr) => {
       const now = new Date();
       const selectedDate = new Date(dashboardDate);
+      
+      // 1. Jika tanggal dashboard sudah lewat (kemarin dst) -> PASTI LEWAT
       if (selectedDate.setHours(0,0,0,0) < now.setHours(0,0,0,0)) return true;
-      if (selectedDate.setHours(0,0,0,0) > now.setHours(0,0,0,0)) return false;
-      const [h, m] = timeStr.split(':').map(Number);
-      const scheduleTime = new Date();
-      scheduleTime.setHours(h, m, 0, 0);
-      return scheduleTime < new Date();
+      
+      // 2. Jika tanggal dashboard hari ini -> CEK JAM
+      if (selectedDate.getTime() === now.getTime()) {
+          const [h, m] = timeStr.split(':').map(Number);
+          const scheduleTime = new Date();
+          scheduleTime.setHours(h, m, 0, 0);
+          // Jika jam jadwal < jam sekarang -> LEWAT
+          return scheduleTime < new Date(); 
+      }
+      
+      // 3. Jika tanggal masa depan -> BELUM LEWAT
+      return false;
   };
 
   const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
@@ -318,16 +337,16 @@ const DashboardPage = ({ onChangePage }) => {
       <div className="flex items-center justify-between mt-8 mb-2">
           <h3 className="font-extrabold text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah Mingguan</h3>
           <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center gap-2 shadow-sm">
-              <div className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-wide">Pilih Minggu</div>
+              <div className="px-3 py-1.5 bg-emerald-50 rounded-lg text-xs font-bold text-emerald-700 uppercase tracking-wide">Pilih Minggu</div>
               <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="text-sm font-bold text-slate-800 bg-transparent outline-none pr-2 cursor-pointer"/>
           </div>
       </div>
 
-      {/* TABEL JADWAL MINGGUAN (KEMBALI KE ASAL) */}
+      {/* TABEL JADWAL MINGGUAN */}
       <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
+            <thead className="bg-emerald-600 text-white uppercase text-xs font-bold tracking-wider">
                 <tr>
                 <th className="p-4 w-24">Hari</th>
                 <th className="p-4 w-32">Jam</th>
@@ -345,15 +364,16 @@ const DashboardPage = ({ onChangePage }) => {
                     const isPast = isSchedulePast(sch.jamMulai);
                     const isCancelled = sch.status === 'cancelled';
                     return (
-                    <tr key={sch.id} className={`transition-colors hover:bg-slate-50 ${isCancelled ? 'bg-red-50/50' : ''}`}>
+                    <tr key={sch.id} className={`transition-colors hover:bg-emerald-50/30 ${isCancelled ? 'bg-red-50/50' : ''}`}>
                         {index === 0 && (
-                            <td rowSpan={daySchedules.length} className="p-4 font-extrabold text-slate-700 bg-slate-50/30 border-r border-slate-100 align-top">{day}</td>
+                            <td rowSpan={daySchedules.length} className="p-4 font-extrabold text-slate-700 bg-slate-50 border-r border-slate-100 align-top">{day}</td>
                         )}
                         <td className="p-4 font-mono font-bold text-slate-500">{sch.jamMulai} - {sch.jamSelesai}</td>
                         <td className="p-4">
                             <div className={`font-bold text-base ${isCancelled ? 'opacity-50 line-through text-slate-500' : 'text-slate-800'}`}>{sch.mataKuliah}</div>
                             <div className="text-xs text-slate-500 mt-0.5">{sch.dosen}</div>
                             {isCancelled && <span className="inline-block mt-1 text-red-600 text-[10px] font-bold uppercase bg-red-100 px-2 py-0.5 rounded">Dibatalkan</span>}
+                            {isPast && !isCancelled && <span className="inline-block mt-1 text-slate-400 text-[10px] font-bold uppercase bg-slate-100 px-2 py-0.5 rounded ml-2">Berlalu</span>}
                         </td>
                         <td className="p-4">
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${isCancelled ? 'bg-white text-slate-400 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
@@ -364,9 +384,9 @@ const DashboardPage = ({ onChangePage }) => {
                         {isCancelled ? (
                             <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
                         ) : isPast ? (
-                            <span className="text-slate-300"><Lock size={18} className="mx-auto"/></span>
+                            <span className="text-slate-300 cursor-not-allowed"><Lock size={18} className="mx-auto"/></span>
                         ) : (
-                            <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                            <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border border-transparent hover:border-red-100">
                                 Cancel
                             </button>
                         )}
@@ -450,6 +470,7 @@ const BookingFlow = ({ onChangePage }) => {
       e.preventDefault();
       if (!date || !startTime) return alert("Mohon isi tanggal dan jam.");
       
+      // LOGIKA VALIDASI INPUT BOOKING
       const today = new Date().toISOString().split('T')[0];
       if (date < today) return alert("Tidak bisa memilih tanggal yang sudah berlalu.");
 
@@ -504,24 +525,24 @@ const BookingFlow = ({ onChangePage }) => {
             <form onSubmit={handleCheckAvailability} className="space-y-6">
               <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Penggunaan</label>
-                  <input type="date" className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+                  <input type="date" className="w-full p-4 bg-gray-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Jam Mulai</label>
-                    <input type="time" className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                    <input type="time" className="w-full p-4 bg-gray-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={startTime} onChange={e => setStartTime(e.target.value)} />
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Durasi</label>
                     <div className="relative">
-                        <select className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 appearance-none transition-all" value={duration} onChange={e => setDuration(parseInt(e.target.value))}>
+                        <select className="w-full p-4 bg-gray-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 appearance-none transition-all" value={duration} onChange={e => setDuration(parseInt(e.target.value))}>
                             <option value={1}>1 Jam</option><option value={2}>2 Jam</option><option value={3}>3 Jam</option>
                         </select>
                         <div className="absolute right-4 top-4 pointer-events-none text-slate-400"><Layers size={20}/></div>
                     </div>
                 </div>
               </div>
-              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
+              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
                   <Search size={20} /> Cek Ketersediaan
               </button>
             </form>
@@ -533,8 +554,8 @@ const BookingFlow = ({ onChangePage }) => {
     if (step === 1) {
         return (
           <div className="animate-fade-in relative pb-20">
-            <div className="sticky top-20 z-40 bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-full shadow-2xl flex items-center gap-4 w-fit mx-auto mb-8 border border-white/20 px-6">
-                 <Timer className="text-emerald-400" size={24} />
+            <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-md text-slate-800 p-3 rounded-full shadow-2xl flex items-center gap-4 w-fit mx-auto mb-8 border border-slate-200 px-6">
+                 <Timer className="text-emerald-600" size={24} />
                  <div>
                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Sisa Waktu</p>
                      <span className="font-mono font-bold text-xl leading-none">{formatTime(timeLeft)}</span>
@@ -557,7 +578,7 @@ const BookingFlow = ({ onChangePage }) => {
 
             <div className="flex gap-3 mb-8 overflow-x-auto pb-2 px-1">
               {[2, 3, 4].map(floor => (
-                  <button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-sm whitespace-nowrap ${selectedFloor === floor ? 'bg-slate-900 text-white shadow-lg scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
+                  <button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-sm whitespace-nowrap ${selectedFloor === floor ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
                       Lantai {floor}
                   </button>
               ))}
@@ -622,7 +643,7 @@ function MainContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   if (!user) return <LoginPage />;
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-gray-50 font-sans text-slate-800 flex flex-col">
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
@@ -648,7 +669,7 @@ function MainContent() {
       {/* COPYRIGHT FOOTER */}
       <footer className="py-8 text-center border-t border-slate-200 mt-auto bg-white">
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Created by</p>
-          <p className="text-slate-800 font-extrabold text-sm">MAFFH Team © 2025</p>
+          <p className="text-slate-800 font-extrabold text-sm">SlotHub © 2025</p>
       </footer>
     </div>
   );
