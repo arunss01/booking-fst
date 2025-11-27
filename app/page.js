@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, LayoutGrid, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, LayoutGrid } from 'lucide-react';
 import { loginUser, getInitialData, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
 // --- CONTEXT ---
@@ -13,6 +13,8 @@ const BookingProvider = ({ children }) => {
   const [myBookings, setMyBookings] = useState([]);
   const [authError, setAuthError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Dashboard date hanya untuk referensi pembatalan, tampilan tetap mingguan
   const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
 
   const login = async (nimInput, passwordInput) => {
@@ -95,91 +97,29 @@ const BookingProvider = ({ children }) => {
 
 const useBooking = () => useContext(BookingContext);
 
-// --- UI COMPONENTS ---
+// --- COMPONENTS ---
 
-const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger", showCancel = true }) => {
+const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger" }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-white/20 ring-1 ring-black/5">
-                <div className={`p-5 flex items-center gap-3 ${type === 'danger' ? 'bg-red-50 text-red-700' : type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-800'}`}>
-                    {type === 'danger' ? <ShieldAlert size={24} /> : type === 'success' ? <CheckCircle size={24} /> : <LayoutGrid size={24}/>}
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
+                <div className={`p-4 flex items-center gap-3 ${type === 'danger' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                    {type === 'danger' ? <ShieldAlert size={24} /> : <CheckCircle size={24} />}
                     <h3 className="font-bold text-lg">{title}</h3>
-                    <button onClick={onCancel} className="ml-auto text-slate-400 hover:text-slate-600"><X size={20}/></button>
                 </div>
                 <div className="p-6">{children}</div>
-                <div className="p-5 bg-slate-50 flex justify-end gap-3 border-t border-slate-100">
-                    {showCancel && <button onClick={onCancel} className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors text-sm">Batal</button>}
-                    {onConfirm && <button onClick={onConfirm} className={`px-5 py-2.5 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 text-sm ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'}`}>
+                <div className="p-4 bg-slate-50 flex justify-end gap-3">
+                    <button onClick={onCancel} className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors text-sm">Batal</button>
+                    <button onClick={onConfirm} className={`px-4 py-2 text-white font-bold rounded-lg shadow-md transition-transform active:scale-95 text-sm ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
                         {confirmText}
-                    </button>}
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
 
-// --- PAGES ---
-
-const LoginPage = () => {
-  const { login, authError, isLoading } = useBooking();
-  const [nim, setNim] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
-      {/* Background Image WA0007 */}
-      <div className="absolute inset-0 z-0">
-        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px]"></div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50">
-            <div className="text-center mb-8">
-            <div className="flex justify-center mx-auto mb-4 bg-white p-3 rounded-2xl w-fit shadow-lg">
-                <img src="/LOGO UIN RMS SURAKARTA.png" alt="Logo" className="w-16 h-auto object-contain"/>
-            </div>
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Reservefy</h1>
-            <p className="text-slate-500 text-sm mt-1 font-medium">Sistem Manajemen Ruang FST</p>
-            </div>
-
-            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
-            
-            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
-                <div className="relative">
-                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
-                <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                </div>
-            </div>
-            <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
-                {isLoading ? 'Memproses...' : 'Masuk ke Reservefy'}
-            </button>
-            </form>
-            
-            <div className="mt-8 text-center">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Powered by MAFFH Team</p>
-            </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// FITUR BARU: MODAL CEK KETERSEDIAAN (QUICK CHECK)
 const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
@@ -196,36 +136,35 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
         setLoading(false);
     };
 
-    // Reset saat modal ditutup
     useEffect(() => { if(!isOpen) { setResults(null); setDate(''); setTime(''); } }, [isOpen]);
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-5 bg-slate-900 text-white flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex justify-between items-center shrink-0">
                     <h3 className="font-bold text-lg flex items-center gap-2"><Search size={20}/> Cek Ruang Kosong</h3>
-                    <button onClick={onClose} className="text-white/70 hover:text-white"><X size={24}/></button>
+                    <button onClick={onClose} className="text-white/70 hover:text-white bg-white/10 rounded-full p-1"><X size={20}/></button>
                 </div>
                 
                 <div className="p-6 overflow-y-auto">
-                    <form onSubmit={handleCheck} className="flex gap-3 mb-6 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div className="flex-1">
+                    <form onSubmit={handleCheck} className="flex flex-wrap md:flex-nowrap gap-3 mb-6 items-end bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="flex-1 w-full">
                             <label className="block text-xs font-bold text-slate-500 mb-1">Tanggal</label>
-                            <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700" />
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none" />
                         </div>
-                        <div className="w-24">
+                        <div className="w-full md:w-32">
                             <label className="block text-xs font-bold text-slate-500 mb-1">Jam</label>
-                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700" />
+                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none" />
                         </div>
-                        <div className="w-24">
+                        <div className="w-full md:w-24">
                             <label className="block text-xs font-bold text-slate-500 mb-1">Durasi</label>
-                            <select value={duration} onChange={e => setDuration(parseInt(e.target.value))} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700">
+                            <select value={duration} onChange={e => setDuration(parseInt(e.target.value))} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
                                 <option value={1}>1 Jam</option><option value={2}>2 Jam</option><option value={3}>3 Jam</option>
                             </select>
                         </div>
-                        <button type="submit" disabled={loading} className="bg-slate-900 text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 disabled:opacity-50">
+                        <button type="submit" disabled={loading} className="w-full md:w-auto bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-lg shadow-emerald-200">
                             {loading ? '...' : 'Cari'}
                         </button>
                     </form>
@@ -233,17 +172,17 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
                     {results && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {results.map(room => (
-                                <div key={room.id} className={`p-4 rounded-xl border-l-4 ${room.isAvailable ? 'border-emerald-500 bg-emerald-50/50' : 'border-red-500 bg-red-50/50'} flex justify-between items-start`}>
+                                <div key={room.id} className={`p-4 rounded-xl border-l-4 ${room.isAvailable ? 'border-emerald-500 bg-white shadow-sm hover:shadow-md' : 'border-red-500 bg-slate-50 opacity-80'} flex justify-between items-start transition-all`}>
                                     <div>
                                         <h4 className="font-bold text-slate-800">{room.name}</h4>
-                                        <p className="text-xs text-slate-500">Lantai {room.floor} • Kapasitas {room.capacity}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5">Lt. {room.floor} • Kap. {room.capacity}</p>
                                     </div>
                                     {room.isAvailable ? (
-                                        <span className="text-emerald-700 text-xs font-extrabold bg-emerald-100 px-2 py-1 rounded">KOSONG</span>
+                                        <span className="text-emerald-700 text-[10px] font-extrabold bg-emerald-100 px-2 py-1 rounded">KOSONG</span>
                                     ) : (
                                         <div className="text-right">
-                                            <span className="text-red-700 text-xs font-extrabold bg-red-100 px-2 py-1 rounded">TERISI</span>
-                                            <p className="text-[10px] text-red-600 mt-1 max-w-[100px] leading-tight">{room.conflictReason}</p>
+                                            <span className="text-red-700 text-[10px] font-extrabold bg-red-100 px-2 py-1 rounded">TERISI</span>
+                                            <p className="text-[10px] text-red-500 mt-1 max-w-[100px] leading-tight truncate">{room.conflictReason}</p>
                                         </div>
                                     )}
                                 </div>
@@ -256,18 +195,71 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     );
 };
 
+// --- PAGES ---
+
+const LoginPage = () => {
+  const { login, authError, isLoading } = useBooking();
+  const [nim, setNim] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center font-sans relative">
+      {/* Background Image WA0007 */}
+      <div className="absolute inset-0 z-0">
+        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-emerald-900/60 backdrop-blur-[2px]"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md px-6">
+        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 animate-fade-in-up">
+            <div className="text-center mb-8">
+                <div className="flex justify-center mx-auto mb-4 bg-white p-3 rounded-2xl w-fit shadow-lg">
+                    <img src="/LOGO UIN RMS SURAKARTA.png" alt="Logo" className="w-16 h-auto object-contain"/>
+                </div>
+                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Reservefy</h1>
+                <p className="text-emerald-600 text-sm mt-1 font-bold">Sistem Manajemen Ruang FST</p>
+            </div>
+
+            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
+            
+            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
+                <div className="relative">
+                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
+                <div className="relative">
+                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
+            </div>
+            <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
+                {isLoading ? 'Memproses...' : 'Masuk ke Reservefy'}
+            </button>
+            </form>
+            
+            <div className="mt-8 text-center pt-6 border-t border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by MAFFH Team</p>
+            </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DashboardPage = ({ onChangePage }) => {
   const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate, checkAvailability } = useBooking();
   const [showQuickCheck, setShowQuickCheck] = useState(false);
+  const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
   
-  const getDayName = (dateStr) => {
-      const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
-      return days[new Date(dateStr).getDay()];
-  };
-
-  const currentDayName = getDayName(dashboardDate);
-  const todaysSchedules = (schedules || []).filter(s => s.hari === currentDayName);
-
   const isSchedulePast = (timeStr) => {
       const now = new Date();
       const selectedDate = new Date(dashboardDate);
@@ -297,101 +289,95 @@ const DashboardPage = ({ onChangePage }) => {
       >
           <p className="text-slate-600 leading-relaxed">
               Anda akan membatalkan <strong>{modalData.data?.mataKuliah || modalData.data?.roomName}</strong>. 
-              <br/>Tindakan ini akan mengembalikan/menambah Poin SKS Anda. Pastikan Anda sudah mengecek ketersediaan ruang pengganti.
+              <br/>Tindakan ini akan mengembalikan/menambah Poin SKS Anda.
           </p>
       </Modal>
 
       <QuickCheckModal isOpen={showQuickCheck} onClose={() => setShowQuickCheck(false)} onCheck={checkAvailability} />
 
       {/* HERO SECTION dengan Foto WA0013 */}
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl h-48 sm:h-56 group">
+      <div className="relative rounded-3xl overflow-hidden shadow-xl h-48 sm:h-56 group">
           <img src="/IMG-20251127-WA0013.jpg" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Hero"/>
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/90 via-emerald-800/70 to-emerald-600/30"></div>
           
           <div className="absolute inset-0 p-8 flex flex-col justify-center">
-              <div className="text-emerald-300 font-bold text-sm tracking-wider mb-1 uppercase">Saldo Poin Anda</div>
-              <div className="text-5xl font-extrabold text-white tracking-tight mb-4">{points} <span className="text-2xl font-medium text-emerald-200">SKS</span></div>
+              <div className="text-emerald-100 font-bold text-xs uppercase tracking-widest mb-1">Saldo Poin Anda</div>
+              <div className="text-5xl font-extrabold text-white tracking-tight mb-6">{points} <span className="text-2xl font-medium text-emerald-200">SKS</span></div>
               
               <div className="flex gap-3">
-                  <button onClick={() => onChangePage('booking')} disabled={points === 0} className="bg-white text-slate-900 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-emerald-50 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button onClick={() => onChangePage('booking')} disabled={points === 0} className="bg-white text-emerald-800 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-emerald-50 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                       <PlusCircle size={18}/> Booking Ruang
                   </button>
-                  {/* TOMBOL BARU: CEK RUANG KOSONG */}
-                  <button onClick={() => setShowQuickCheck(true)} className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold hover:bg-white/30 flex items-center gap-2 transition-all">
+                  <button onClick={() => setShowQuickCheck(true)} className="bg-emerald-900/40 backdrop-blur-md text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900/60 flex items-center gap-2 transition-all">
                       <Search size={18}/> Cek Ketersediaan
                   </button>
               </div>
           </div>
       </div>
 
-      <div className="flex items-center justify-between mt-8 mb-4">
-          <h3 className="font-extrabold text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah</h3>
+      <div className="flex items-center justify-between mt-8 mb-2">
+          <h3 className="font-extrabold text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah Mingguan</h3>
           <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center gap-2 shadow-sm">
-              <div className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-wide">Filter Tanggal</div>
+              <div className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-wide">Pilih Minggu</div>
               <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="text-sm font-bold text-slate-800 bg-transparent outline-none pr-2 cursor-pointer"/>
           </div>
       </div>
 
-      {/* TABEL JADWAL PREMIUM */}
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <span className="font-extrabold text-slate-700 text-lg">{currentDayName}</span>
-              <span className="text-xs font-medium text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">{dashboardDate}</span>
-          </div>
-          
-          {todaysSchedules.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center text-slate-400">
-                  <Calendar size={48} className="mb-4 opacity-20"/>
-                  <p className="font-medium">Tidak ada jadwal kuliah di hari ini.</p>
-              </div>
-          ) : (
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                <thead>
-                    {/* Header Gelap Elegan */}
-                    <tr className="bg-slate-800 text-white uppercase text-xs tracking-wider">
-                    <th className="p-5 font-bold rounded-tl-lg">Waktu</th>
-                    <th className="p-5 font-bold">Mata Kuliah</th>
-                    <th className="p-5 font-bold">Ruang</th>
-                    <th className="p-5 font-bold text-center rounded-tr-lg">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {todaysSchedules.map((sch, idx) => {
+      {/* TABEL JADWAL MINGGUAN (KEMBALI KE ASAL) */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
+                <tr>
+                <th className="p-4 w-24">Hari</th>
+                <th className="p-4 w-32">Jam</th>
+                <th className="p-4">Mata Kuliah</th>
+                <th className="p-4 w-32">Ruang</th>
+                <th className="p-4 w-24 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+                {weekDays.map(day => {
+                const daySchedules = (schedules || []).filter(s => s.hari === day);
+                if (daySchedules.length === 0) return null;
+
+                return daySchedules.map((sch, index) => {
                     const isPast = isSchedulePast(sch.jamMulai);
                     const isCancelled = sch.status === 'cancelled';
                     return (
-                        <tr key={sch.id} className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/50 ${isCancelled ? 'bg-red-50/80' : ''}`}>
-                            <td className="p-5 font-mono font-bold text-slate-500 whitespace-nowrap">{sch.jamMulai} - {sch.jamSelesai}</td>
-                            <td className="p-5">
-                                <div className={`font-bold text-base ${isCancelled ? 'opacity-50 line-through text-slate-500' : 'text-slate-800'}`}>{sch.mataKuliah}</div>
-                                <div className="text-xs text-slate-500 mt-1 font-medium">{sch.dosen}</div>
-                                {isCancelled && <span className="inline-block mt-2 text-red-600 text-[10px] font-extrabold bg-red-100 px-2 py-0.5 rounded tracking-wide">DIBATALKAN</span>}
-                                {isPast && !isCancelled && <span className="inline-block mt-2 text-slate-400 text-[10px] font-extrabold bg-slate-200 px-2 py-0.5 rounded tracking-wide">SELESAI</span>}
-                            </td>
-                            <td className="p-5">
-                                <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${isCancelled ? 'bg-white text-slate-400 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
-                                    {sch.room?.name || sch.roomId}
-                                </span>
-                            </td>
-                            <td className="p-5 text-center">
-                            {isCancelled ? (
-                                <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={20} /></button>
-                            ) : isPast ? (
-                                <Lock size={20} className="text-slate-200 mx-auto"/>
-                            ) : (
-                                <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="group bg-white border-2 border-red-100 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 mx-auto">
-                                    Cancel
-                                </button>
-                            )}
-                            </td>
-                        </tr>
+                    <tr key={sch.id} className={`transition-colors hover:bg-slate-50 ${isCancelled ? 'bg-red-50/50' : ''}`}>
+                        {index === 0 && (
+                            <td rowSpan={daySchedules.length} className="p-4 font-extrabold text-slate-700 bg-slate-50/30 border-r border-slate-100 align-top">{day}</td>
+                        )}
+                        <td className="p-4 font-mono font-bold text-slate-500">{sch.jamMulai} - {sch.jamSelesai}</td>
+                        <td className="p-4">
+                            <div className={`font-bold text-base ${isCancelled ? 'opacity-50 line-through text-slate-500' : 'text-slate-800'}`}>{sch.mataKuliah}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{sch.dosen}</div>
+                            {isCancelled && <span className="inline-block mt-1 text-red-600 text-[10px] font-bold uppercase bg-red-100 px-2 py-0.5 rounded">Dibatalkan</span>}
+                        </td>
+                        <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${isCancelled ? 'bg-white text-slate-400 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                {sch.room?.name || sch.roomId}
+                            </span>
+                        </td>
+                        <td className="p-4 text-center">
+                        {isCancelled ? (
+                            <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
+                        ) : isPast ? (
+                            <span className="text-slate-300"><Lock size={18} className="mx-auto"/></span>
+                        ) : (
+                            <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                Cancel
+                            </button>
+                        )}
+                        </td>
+                    </tr>
                     );
-                    })}
-                </tbody>
-                </table>
-            </div>
-          )}
+                });
+                })}
+            </tbody>
+            </table>
+        </div>
       </div>
 
       {myBookings && myBookings.length > 0 && (
@@ -435,7 +421,7 @@ const BookingFlow = ({ onChangePage }) => {
     const [date, setDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState(1);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 Menit 
+    const [timeLeft, setTimeLeft] = useState(300); 
     const [allRoomsStatus, setAllRoomsStatus] = useState([]);
     const [selectedFloor, setSelectedFloor] = useState(2); 
     const [selectedRoom, setSelectedRoom] = useState(null);
