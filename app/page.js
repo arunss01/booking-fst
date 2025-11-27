@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock } from 'lucide-react';
+import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, LayoutGrid, ArrowRight } from 'lucide-react';
 import { loginUser, getInitialData, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
+// --- CONTEXT ---
 const BookingContext = createContext();
 
 const BookingProvider = ({ children }) => {
@@ -12,7 +13,6 @@ const BookingProvider = ({ children }) => {
   const [myBookings, setMyBookings] = useState([]);
   const [authError, setAuthError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
   const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
 
   const login = async (nimInput, passwordInput) => {
@@ -29,10 +29,7 @@ const BookingProvider = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
-    setPoints(0);
-    setSchedules([]);
-    setMyBookings([]);
+    setUser(null); setPoints(0); setSchedules([]); setMyBookings([]);
   };
 
   const refreshUserData = async (id, kelas, major, dateStr) => {
@@ -45,9 +42,7 @@ const BookingProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (user) {
-        refreshUserData(user.id, user.kelas, user.major, dashboardDate);
-    }
+    if (user) refreshUserData(user.id, user.kelas, user.major, dashboardDate);
   }, [dashboardDate]);
 
   const cancelSchedule = async (id, sks) => {
@@ -83,8 +78,7 @@ const BookingProvider = ({ children }) => {
       const result = await bookRoomAction(bookingData);
       if (result.success) {
           await refreshUserData(user.id, user.kelas, user.major, dashboardDate);
-          // SAFETY: Pastikan return object ada bookingId-nya
-          return { success: true, bookingId: result.bookingId || "UNKNOWN-ID" };
+          return { success: true, bookingId: result.bookingId || "ID-ERROR" };
       }
       return { success: false, message: result.message };
   };
@@ -101,28 +95,31 @@ const BookingProvider = ({ children }) => {
 
 const useBooking = () => useContext(BookingContext);
 
-// --- COMPONENTS ---
+// --- UI COMPONENTS ---
 
-const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Ya, Lanjutkan", type = "danger" }) => {
+const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger", showCancel = true }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-                <div className={`p-4 flex items-center gap-3 ${type === 'danger' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                    {type === 'danger' ? <ShieldAlert size={24} /> : <CheckCircle size={24} />}
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-white/20 ring-1 ring-black/5">
+                <div className={`p-5 flex items-center gap-3 ${type === 'danger' ? 'bg-red-50 text-red-700' : type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-800'}`}>
+                    {type === 'danger' ? <ShieldAlert size={24} /> : type === 'success' ? <CheckCircle size={24} /> : <LayoutGrid size={24}/>}
                     <h3 className="font-bold text-lg">{title}</h3>
+                    <button onClick={onCancel} className="ml-auto text-slate-400 hover:text-slate-600"><X size={20}/></button>
                 </div>
                 <div className="p-6">{children}</div>
-                <div className="p-4 bg-slate-50 flex justify-end gap-3">
-                    <button onClick={onCancel} className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
-                    <button onClick={onConfirm} className={`px-4 py-2 text-white font-bold rounded-lg shadow-md transition-transform active:scale-95 ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                <div className="p-5 bg-slate-50 flex justify-end gap-3 border-t border-slate-100">
+                    {showCancel && <button onClick={onCancel} className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors text-sm">Batal</button>}
+                    {onConfirm && <button onClick={onConfirm} className={`px-5 py-2.5 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 text-sm ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'}`}>
                         {confirmText}
-                    </button>
+                    </button>}
                 </div>
             </div>
         </div>
     );
 };
+
+// --- PAGES ---
 
 const LoginPage = () => {
   const { login, authError, isLoading } = useBooking();
@@ -131,35 +128,137 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 font-sans bg-[url('https://images.unsplash.com/photo-1497864149936-d1100c5fcf79?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-      <div className="relative bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border-t-4 border-emerald-600 animate-fade-in-up">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mx-auto mb-6">
-            <img src="/LOGO UIN RMS SURAKARTA.png" alt="Logo FST" className="w-40 h-auto object-contain drop-shadow-md hover:scale-105 transition-transform"/>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800">Sistem Booking FST</h1>
-          <p className="text-slate-500 text-sm mt-1">Universitas Islam Negeri Raden Mas Said</p>
+    <div className="min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
+      {/* Background Image WA0007 */}
+      <div className="absolute inset-0 z-0">
+        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px]"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md px-6">
+        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50">
+            <div className="text-center mb-8">
+            <div className="flex justify-center mx-auto mb-4 bg-white p-3 rounded-2xl w-fit shadow-lg">
+                <img src="/LOGO UIN RMS SURAKARTA.png" alt="Logo" className="w-16 h-auto object-contain"/>
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Reservefy</h1>
+            <p className="text-slate-500 text-sm mt-1 font-medium">Sistem Manajemen Ruang FST</p>
+            </div>
+
+            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
+            
+            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
+                <div className="relative">
+                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
+                <div className="relative">
+                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
+            </div>
+            <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
+                {isLoading ? 'Memproses...' : 'Masuk ke Reservefy'}
+            </button>
+            </form>
+            
+            <div className="mt-8 text-center">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Powered by MAFFH Team</p>
+            </div>
         </div>
-        {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm flex items-center gap-2 animate-pulse"><AlertCircle size={16} /> {authError}</div>}
-        <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">NIM / Username</label>
-            <div className="relative"><User className="absolute left-3 top-3 text-slate-400" size={20} /><input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-black font-bold bg-slate-50 focus:bg-white" placeholder="Masukkan NIM" /></div>
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">Password</label>
-            <div className="relative"><Lock className="absolute left-3 top-3 text-slate-400" size={20} /><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-black font-bold bg-slate-50 focus:bg-white" placeholder="Masukkan Password" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
-          </div>
-          <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-70">{isLoading ? 'Memuat...' : 'Masuk Sistem'}</button>
-        </form>
       </div>
     </div>
   );
 };
 
+// FITUR BARU: MODAL CEK KETERSEDIAAN (QUICK CHECK)
+const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
+    const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
+    const [duration, setDuration] = useState(1);
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleCheck = async (e) => {
+        e.preventDefault();
+        if(!date || !time) return;
+        setLoading(true);
+        const data = await onCheck(date, time, duration);
+        setResults(data);
+        setLoading(false);
+    };
+
+    // Reset saat modal ditutup
+    useEffect(() => { if(!isOpen) { setResults(null); setDate(''); setTime(''); } }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-5 bg-slate-900 text-white flex justify-between items-center shrink-0">
+                    <h3 className="font-bold text-lg flex items-center gap-2"><Search size={20}/> Cek Ruang Kosong</h3>
+                    <button onClick={onClose} className="text-white/70 hover:text-white"><X size={24}/></button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto">
+                    <form onSubmit={handleCheck} className="flex gap-3 mb-6 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Tanggal</label>
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700" />
+                        </div>
+                        <div className="w-24">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Jam</label>
+                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700" />
+                        </div>
+                        <div className="w-24">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Durasi</label>
+                            <select value={duration} onChange={e => setDuration(parseInt(e.target.value))} className="w-full p-2.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-700">
+                                <option value={1}>1 Jam</option><option value={2}>2 Jam</option><option value={3}>3 Jam</option>
+                            </select>
+                        </div>
+                        <button type="submit" disabled={loading} className="bg-slate-900 text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 disabled:opacity-50">
+                            {loading ? '...' : 'Cari'}
+                        </button>
+                    </form>
+
+                    {results && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {results.map(room => (
+                                <div key={room.id} className={`p-4 rounded-xl border-l-4 ${room.isAvailable ? 'border-emerald-500 bg-emerald-50/50' : 'border-red-500 bg-red-50/50'} flex justify-between items-start`}>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800">{room.name}</h4>
+                                        <p className="text-xs text-slate-500">Lantai {room.floor} • Kapasitas {room.capacity}</p>
+                                    </div>
+                                    {room.isAvailable ? (
+                                        <span className="text-emerald-700 text-xs font-extrabold bg-emerald-100 px-2 py-1 rounded">KOSONG</span>
+                                    ) : (
+                                        <div className="text-right">
+                                            <span className="text-red-700 text-xs font-extrabold bg-red-100 px-2 py-1 rounded">TERISI</span>
+                                            <p className="text-[10px] text-red-600 mt-1 max-w-[100px] leading-tight">{room.conflictReason}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const DashboardPage = ({ onChangePage }) => {
-  const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate } = useBooking();
+  const { user, points, schedules, cancelSchedule, myBookings, cancelBooking, dashboardDate, setDashboardDate, checkAvailability } = useBooking();
+  const [showQuickCheck, setShowQuickCheck] = useState(false);
   
   const getDayName = (dateStr) => {
       const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
@@ -167,7 +266,6 @@ const DashboardPage = ({ onChangePage }) => {
   };
 
   const currentDayName = getDayName(dashboardDate);
-  // SAFETY CHECK: Pastikan schedules ada sebelum di-filter
   const todaysSchedules = (schedules || []).filter(s => s.hari === currentDayName);
 
   const isSchedulePast = (timeStr) => {
@@ -184,115 +282,144 @@ const DashboardPage = ({ onChangePage }) => {
   const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
 
   return (
-    <div className="space-y-8 animate-fade-in pb-24">
+    <div className="space-y-8 animate-fade-in pb-20">
       <Modal 
          isOpen={modalData.isOpen} 
-         title={modalData.type === 'cancel_schedule' ? "Batalkan Jadwal?" : "Batalkan Booking?"}
+         title={modalData.type === 'cancel_schedule' ? "Konfirmasi Pembatalan" : "Batalkan Booking"}
          onCancel={() => setModalData({ ...modalData, isOpen: false })}
          onConfirm={async () => {
-             // SAFETY CHECK: Pastikan modalData.data tidak null
              if (!modalData.data) return;
-
              if (modalData.type === 'cancel_schedule') await cancelSchedule(modalData.data.id, modalData.data.sks);
              else await cancelBooking(modalData.data.bookingId, modalData.data.duration);
              setModalData({ isOpen: false, type: '', data: null });
          }}
-         confirmText="Ya, Lanjutkan"
+         confirmText="Ya, Batalkan"
       >
-          <p className="text-slate-600">Apakah Anda yakin ingin membatalkan ini? Poin akan disesuaikan.</p>
+          <p className="text-slate-600 leading-relaxed">
+              Anda akan membatalkan <strong>{modalData.data?.mataKuliah || modalData.data?.roomName}</strong>. 
+              <br/>Tindakan ini akan mengembalikan/menambah Poin SKS Anda. Pastikan Anda sudah mengecek ketersediaan ruang pengganti.
+          </p>
       </Modal>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-gradient-to-r from-emerald-700 to-emerald-600 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-emerald-100 text-sm font-medium mb-1">Saldo Poin</p>
-            <div className="text-4xl font-bold tracking-tight">{points} SKS</div>
+      <QuickCheckModal isOpen={showQuickCheck} onClose={() => setShowQuickCheck(false)} onCheck={checkAvailability} />
+
+      {/* HERO SECTION dengan Foto WA0013 */}
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl h-48 sm:h-56 group">
+          <img src="/IMG-20251127-WA0013.jpg" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Hero"/>
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-transparent"></div>
+          
+          <div className="absolute inset-0 p-8 flex flex-col justify-center">
+              <div className="text-emerald-300 font-bold text-sm tracking-wider mb-1 uppercase">Saldo Poin Anda</div>
+              <div className="text-5xl font-extrabold text-white tracking-tight mb-4">{points} <span className="text-2xl font-medium text-emerald-200">SKS</span></div>
+              
+              <div className="flex gap-3">
+                  <button onClick={() => onChangePage('booking')} disabled={points === 0} className="bg-white text-slate-900 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-emerald-50 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <PlusCircle size={18}/> Booking Ruang
+                  </button>
+                  {/* TOMBOL BARU: CEK RUANG KOSONG */}
+                  <button onClick={() => setShowQuickCheck(true)} className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold hover:bg-white/30 flex items-center gap-2 transition-all">
+                      <Search size={18}/> Cek Ketersediaan
+                  </button>
+              </div>
           </div>
-          <button onClick={() => onChangePage('booking')} disabled={points === 0} className="relative z-10 px-5 py-3 bg-white text-emerald-800 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:bg-slate-50">
-            <PlusCircle size={20} /> Booking
-          </button>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center"><User size={20} /></div>
-             <div><h3 className="font-bold text-slate-800 text-sm">{user.name}</h3><p className="text-xs text-slate-500">{user.major}</p></div>
-           </div>
-        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between sticky top-16 z-30">
-        <h3 className="font-bold text-slate-700 flex items-center gap-2"><Calendar size={20} className="text-emerald-600"/> Jadwal Kuliah</h3>
-        <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"/>
+      <div className="flex items-center justify-between mt-8 mb-4">
+          <h3 className="font-extrabold text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah</h3>
+          <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center gap-2 shadow-sm">
+              <div className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase tracking-wide">Filter Tanggal</div>
+              <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="text-sm font-bold text-slate-800 bg-transparent outline-none pr-2 cursor-pointer"/>
+          </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-600 flex justify-between">
-              <span>{currentDayName}</span>
-              <span className="text-xs font-normal bg-white px-2 py-1 rounded border">{dashboardDate}</span>
+      {/* TABEL JADWAL PREMIUM */}
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+          <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+              <span className="font-extrabold text-slate-700 text-lg">{currentDayName}</span>
+              <span className="text-xs font-medium text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">{dashboardDate}</span>
           </div>
+          
           {todaysSchedules.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 italic">Tidak ada jadwal kuliah di hari ini.</div>
+              <div className="p-12 text-center flex flex-col items-center justify-center text-slate-400">
+                  <Calendar size={48} className="mb-4 opacity-20"/>
+                  <p className="font-medium">Tidak ada jadwal kuliah di hari ini.</p>
+              </div>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
-                <tr>
-                  <th className="p-4">Jam</th>
-                  <th className="p-4">Mata Kuliah</th>
-                  <th className="p-4">Ruang</th>
-                  <th className="p-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {todaysSchedules.map((sch) => {
-                  const isPast = isSchedulePast(sch.jamMulai);
-                  const isCancelled = sch.status === 'cancelled';
-                  return (
-                    <tr key={sch.id} className={`hover:bg-slate-50 transition-colors ${isCancelled ? 'bg-red-50/50' : ''} ${isPast ? 'opacity-60' : ''}`}>
-                        <td className="p-4 font-medium text-slate-600">{sch.jamMulai} - {sch.jamSelesai}</td>
-                        <td className="p-4">
-                        <div className={isCancelled ? 'opacity-50 line-through' : 'font-bold text-slate-800'}>{sch.mataKuliah}</div>
-                        <div className="text-xs text-slate-500">{sch.dosen}</div>
-                        {isCancelled && <span className="text-red-600 text-[10px] font-bold uppercase">Dibatalkan</span>}
-                        {isPast && !isCancelled && <span className="text-slate-400 text-[10px] font-bold uppercase ml-2">Berlalu</span>}
-                        </td>
-                        <td className="p-4"><span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">{sch.room?.name || sch.roomId}</span></td>
-                        <td className="p-4 text-center">
-                        {isCancelled ? (
-                            <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
-                        ) : isPast ? (
-                            <button disabled className="bg-slate-100 text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold cursor-not-allowed border border-slate-200">Selesai</button>
-                        ) : (
-                            <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">Cancel</button>
-                        )}
-                        </td>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                <thead>
+                    {/* Header Gelap Elegan */}
+                    <tr className="bg-slate-800 text-white uppercase text-xs tracking-wider">
+                    <th className="p-5 font-bold rounded-tl-lg">Waktu</th>
+                    <th className="p-5 font-bold">Mata Kuliah</th>
+                    <th className="p-5 font-bold">Ruang</th>
+                    <th className="p-5 font-bold text-center rounded-tr-lg">Aksi</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                    {todaysSchedules.map((sch, idx) => {
+                    const isPast = isSchedulePast(sch.jamMulai);
+                    const isCancelled = sch.status === 'cancelled';
+                    return (
+                        <tr key={sch.id} className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/50 ${isCancelled ? 'bg-red-50/80' : ''}`}>
+                            <td className="p-5 font-mono font-bold text-slate-500 whitespace-nowrap">{sch.jamMulai} - {sch.jamSelesai}</td>
+                            <td className="p-5">
+                                <div className={`font-bold text-base ${isCancelled ? 'opacity-50 line-through text-slate-500' : 'text-slate-800'}`}>{sch.mataKuliah}</div>
+                                <div className="text-xs text-slate-500 mt-1 font-medium">{sch.dosen}</div>
+                                {isCancelled && <span className="inline-block mt-2 text-red-600 text-[10px] font-extrabold bg-red-100 px-2 py-0.5 rounded tracking-wide">DIBATALKAN</span>}
+                                {isPast && !isCancelled && <span className="inline-block mt-2 text-slate-400 text-[10px] font-extrabold bg-slate-200 px-2 py-0.5 rounded tracking-wide">SELESAI</span>}
+                            </td>
+                            <td className="p-5">
+                                <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${isCancelled ? 'bg-white text-slate-400 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+                                    {sch.room?.name || sch.roomId}
+                                </span>
+                            </td>
+                            <td className="p-5 text-center">
+                            {isCancelled ? (
+                                <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={20} /></button>
+                            ) : isPast ? (
+                                <Lock size={20} className="text-slate-200 mx-auto"/>
+                            ) : (
+                                <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="group bg-white border-2 border-red-100 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 mx-auto">
+                                    Cancel
+                                </button>
+                            )}
+                            </td>
+                        </tr>
+                    );
+                    })}
+                </tbody>
+                </table>
+            </div>
           )}
       </div>
 
-      {/* Booking History (SAFETY CHECK: Jika myBookings null, jangan crash) */}
       {myBookings && myBookings.length > 0 && (
-        <div className="mt-8">
-           <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><CheckCircle className="text-emerald-600" size={20} /> Tiket Booking Saya</h3>
-           <div className="grid gap-4 md:grid-cols-2">
+        <div className="mt-10">
+           <h3 className="font-extrabold text-2xl text-slate-800 mb-6 flex items-center gap-2">Riwayat Booking</h3>
+           <div className="grid gap-5 md:grid-cols-2">
              {myBookings.map(b => {
-               // SAFETY CHECK: Jika data b corrupt/null, skip
                if (!b) return null;
-               
                return (
-               <div key={b.bookingId || Math.random()} className={`bg-white rounded-xl shadow-md border p-4 ${b.status === 'DIBATALKAN' ? 'opacity-75 border-red-200' : 'border-slate-200'}`}>
-                   <div className="flex justify-between mb-2">
-                       <span className="font-mono font-bold text-slate-600">{b.bookingId}</span>
-                       <span className={`text-xs font-bold px-2 py-1 rounded ${b.status === 'TERKONFIRMASI' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{b.status}</span>
+               <div key={b.bookingId || Math.random()} className={`bg-white rounded-2xl shadow-sm border-l-4 p-5 transition-all hover:shadow-md ${b.status === 'DIBATALKAN' ? 'border-l-red-400 opacity-60 bg-slate-50' : 'border-l-emerald-500'}`}>
+                   <div className="flex justify-between mb-3">
+                       <span className="font-mono font-bold text-xs text-slate-400 uppercase tracking-widest">ID: {b.bookingId}</span>
+                       <span className={`text-[10px] font-extrabold px-2 py-1 rounded uppercase tracking-wide ${b.status === 'TERKONFIRMASI' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{b.status}</span>
                    </div>
-                   <h4 className="font-bold text-lg">{b.roomName}</h4>
-                   <p className="text-sm text-slate-500">{b.date} • {b.startTime} - {b.endTime}</p>
-                   {b.status === 'TERKONFIRMASI' && new Date(b.date + 'T' + b.startTime) > new Date() && (
-                       <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:underline">Batalkan Booking</button>
-                   )}
+                   <div className="flex items-start gap-4">
+                       <div className={`p-3 rounded-xl ${b.status === 'TERKONFIRMASI' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                           <MapPin size={24}/>
+                       </div>
+                       <div>
+                           <h4 className="font-bold text-lg text-slate-800 leading-tight">{b.roomName}</h4>
+                           <p className="text-sm font-medium text-slate-500 mt-1">{b.date} • {b.startTime} - {b.endTime}</p>
+                           {b.status === 'TERKONFIRMASI' && new Date(b.date + 'T' + b.startTime) > new Date() && (
+                               <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:text-red-700 flex items-center gap-1 transition-colors">
+                                   <X size={14}/> Batalkan Pesanan
+                               </button>
+                           )}
+                       </div>
+                   </div>
                </div>
              )})}
            </div>
@@ -308,7 +435,7 @@ const BookingFlow = ({ onChangePage }) => {
     const [date, setDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState(1);
-    const [timeLeft, setTimeLeft] = useState(300); 
+    const [timeLeft, setTimeLeft] = useState(300); // 5 Menit 
     const [allRoomsStatus, setAllRoomsStatus] = useState([]);
     const [selectedFloor, setSelectedFloor] = useState(2); 
     const [selectedRoom, setSelectedRoom] = useState(null);
@@ -380,23 +507,37 @@ const BookingFlow = ({ onChangePage }) => {
   
     if (step === 0) {
       return (
-        <div className="max-w-lg mx-auto animate-fade-in">
-          <button onClick={() => onChangePage('dashboard')} className="mb-6 text-slate-500 flex items-center gap-1 hover:text-emerald-600 text-sm font-medium">← Kembali ke Dashboard</button>
-          <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Cari Ketersediaan</h2>
+        <div className="max-w-lg mx-auto animate-fade-in py-10">
+          <button onClick={() => onChangePage('dashboard')} className="mb-8 text-slate-500 flex items-center gap-2 hover:text-emerald-600 text-sm font-bold transition-colors">
+              <ArrowRight className="rotate-180" size={18}/> Kembali ke Dashboard
+          </button>
+          <div className="bg-white p-8 rounded-[2rem] shadow-2xl border border-slate-100">
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Booking Ruang</h2>
+            <p className="text-slate-500 mb-8">Pilih waktu penggunaan untuk melihat ruangan yang tersedia.</p>
+            
             <form onSubmit={handleCheckAvailability} className="space-y-6">
               <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Tanggal</label>
-                  <input type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Penggunaan</label>
+                  <input type="date" className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Jam</label>
-                    <input type="time" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Jam Mulai</label>
+                    <input type="time" className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all" value={startTime} onChange={e => setStartTime(e.target.value)} />
                 </div>
-                <div><label className="block text-sm font-bold text-slate-700 mb-2">Durasi</label><select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={duration} onChange={e => setDuration(parseInt(e.target.value))}><option value={1}>1 Jam</option><option value={2}>2 Jam</option><option value={3}>3 Jam</option></select></div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Durasi</label>
+                    <div className="relative">
+                        <select className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 appearance-none transition-all" value={duration} onChange={e => setDuration(parseInt(e.target.value))}>
+                            <option value={1}>1 Jam</option><option value={2}>2 Jam</option><option value={3}>3 Jam</option>
+                        </select>
+                        <div className="absolute right-4 top-4 pointer-events-none text-slate-400"><Layers size={20}/></div>
+                    </div>
+                </div>
               </div>
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2"><Search size={20} /> Cek Ruangan</button>
+              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
+                  <Search size={20} /> Cek Ketersediaan
+              </button>
             </form>
           </div>
         </div>
@@ -405,31 +546,58 @@ const BookingFlow = ({ onChangePage }) => {
 
     if (step === 1) {
         return (
-          <div className="animate-fade-in relative">
-            <div className="sticky top-20 z-40 bg-slate-900 text-white p-3 rounded-full shadow-xl flex items-center gap-3 w-fit mx-auto mb-6 border-2 border-emerald-400">
-                 <Timer className="text-emerald-400" size={20} />
-                 <span className="font-mono font-bold text-lg">{formatTime(timeLeft)}</span>
-            </div>
-            <Modal isOpen={showConfirmModal} title="Konfirmasi" onCancel={() => setShowConfirmModal(false)} onConfirm={handleExecuteBooking} confirmText="Booking" type="success"><p>Booking {selectedRoom?.name}?</p></Modal>
-            
-            <div className="flex items-center justify-between mb-6">
-               <button onClick={() => setStep(0)} className="text-slate-500 flex items-center gap-1 hover:text-emerald-600 text-sm font-medium">← Ubah Waktu</button>
-               <div className="text-right"><p className="text-xs text-slate-400">Status Pukul</p><p className="font-bold text-sm text-slate-700">{date} • {startTime}</p></div>
+          <div className="animate-fade-in relative pb-20">
+            <div className="sticky top-20 z-40 bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-full shadow-2xl flex items-center gap-4 w-fit mx-auto mb-8 border border-white/20 px-6">
+                 <Timer className="text-emerald-400" size={24} />
+                 <div>
+                     <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Sisa Waktu</p>
+                     <span className="font-mono font-bold text-xl leading-none">{formatTime(timeLeft)}</span>
+                 </div>
             </div>
 
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-              {[2, 3, 4].map(floor => (<button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-5 py-2 rounded-full text-sm font-bold ${selectedFloor === floor ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>Lt {floor}</button>))}
+            <Modal isOpen={showConfirmModal} title="Konfirmasi Booking" onCancel={() => setShowConfirmModal(false)} onConfirm={handleExecuteBooking} confirmText="Ya, Booking Sekarang" type="success">
+                <p className="text-slate-600 mb-4">Anda akan menggunakan poin SKS untuk membooking ruangan ini.</p>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm space-y-2">
+                    <div className="flex justify-between"><span className="text-slate-500">Ruangan</span><span className="font-bold text-slate-800">{selectedRoom?.name}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Waktu</span><span className="font-bold text-slate-800">{date}, {startTime}</span></div>
+                    <div className="flex justify-between pt-2 border-t border-slate-200"><span className="text-slate-500">Biaya</span><span className="font-bold text-emerald-600">-{duration} Poin</span></div>
+                </div>
+            </Modal>
+            
+            <div className="flex items-center justify-between mb-6 px-2">
+               <button onClick={() => setStep(0)} className="text-slate-500 flex items-center gap-2 hover:text-emerald-600 text-sm font-bold transition-colors">← Ubah Pencarian</button>
+               <div className="text-right"><p className="text-xs text-slate-400 font-bold uppercase">Status Pukul</p><p className="font-bold text-slate-700">{date} • {startTime}</p></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="flex gap-3 mb-8 overflow-x-auto pb-2 px-1">
+              {[2, 3, 4].map(floor => (
+                  <button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-sm whitespace-nowrap ${selectedFloor === floor ? 'bg-slate-900 text-white shadow-lg scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
+                      Lantai {floor}
+                  </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {visibleRooms.map((room) => (
-                <div key={room.id} className={`p-5 rounded-xl border-2 ${room.isAvailable ? 'bg-white hover:border-emerald-500 cursor-pointer' : 'bg-slate-100 opacity-80'}`} onClick={() => room.isAvailable && requestBooking(room)}>
-                  <div className="flex justify-between mb-2">
-                      <h3 className="font-bold text-lg">{room.name}</h3>
-                      {room.isAvailable ? <span className="text-green-600 font-bold text-xs bg-green-100 px-2 py-1 rounded">OK</span> : <span className="text-red-600 font-bold text-xs bg-red-100 px-2 py-1 rounded">SIBUK</span>}
+                <div key={room.id} className={`p-6 rounded-3xl border-2 transition-all flex flex-col justify-between min-h-[160px] ${room.isAvailable ? 'bg-white border-white shadow-lg hover:border-emerald-400 hover:shadow-xl cursor-pointer group' : 'bg-slate-50 border-slate-100 opacity-70 grayscale'}`} onClick={() => room.isAvailable && requestBooking(room)}>
+                  <div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className={`p-3 rounded-2xl ${room.isAvailable ? 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors' : 'bg-slate-200 text-slate-400'}`}>
+                            <MapPin size={24} />
+                        </div>
+                        {room.isAvailable ? <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wide">Tersedia</span> : <span className="bg-red-100 text-red-700 text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wide">Terisi</span>}
+                    </div>
+                    <h3 className="font-extrabold text-xl text-slate-800 mb-1">{room.name}</h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kapasitas {room.capacity} Orang</p>
                   </div>
-                  {!room.isAvailable && (
-                      <div className="mt-3 pt-2 border-t border-slate-200 text-xs text-red-600 font-bold flex items-start gap-1">
-                          <Clock size={12} className="mt-0.5 shrink-0"/> {room.conflictReason}
+                  
+                  {!room.isAvailable ? (
+                      <div className="mt-4 pt-3 border-t border-slate-200 text-xs text-red-500 font-bold flex items-start gap-1.5">
+                          <Clock size={14} className="shrink-0 mt-0.5"/> {room.conflictReason}
+                      </div>
+                  ) : (
+                      <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-emerald-600 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <CheckCircle size={14}/> Klik untuk booking
                       </div>
                   )}
                 </div>
@@ -440,12 +608,17 @@ const BookingFlow = ({ onChangePage }) => {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center animate-fade-in">
-            <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-emerald-200 shadow-xl"><CheckCircle className="w-12 h-12 text-emerald-600" /></div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">Booking Berhasil!</h2>
-            <p className="text-slate-500 mb-4">Ruangan <strong>{selectedRoom?.name}</strong> telah diamankan.</p>
-            <div className="bg-slate-100 px-6 py-3 rounded-lg font-mono font-bold text-slate-700 border border-slate-200 mb-6">ID: {newBookingId}</div>
-            <div className="text-sm text-slate-400 animate-pulse">Mengalihkan ke dashboard...</div>
+        <div className="flex flex-col items-center justify-center h-[70vh] text-center animate-fade-in">
+            <div className="w-32 h-32 bg-emerald-50 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-emerald-100 border-4 border-white">
+                <CheckCircle className="w-16 h-16 text-emerald-500" />
+            </div>
+            <h2 className="text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">Booking Berhasil!</h2>
+            <p className="text-slate-500 mb-8 text-lg">Ruangan telah diamankan untuk Anda.</p>
+            <div className="bg-white px-8 py-4 rounded-2xl font-mono font-bold text-slate-700 border-2 border-slate-100 shadow-lg mb-8 flex flex-col gap-1">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Booking ID</span>
+                <span className="text-xl">{newBookingId}</span>
+            </div>
+            <div className="text-sm font-bold text-emerald-600 animate-pulse">Mengalihkan ke dashboard...</div>
         </div>
       )
 };
@@ -463,23 +636,34 @@ function MainContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   if (!user) return <LoginPage />;
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      <nav className="bg-white sticky top-0 z-50 border-b border-slate-200 px-4 py-3 shadow-sm backdrop-blur-md bg-white/90">
+    <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 flex flex-col">
+      <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentPage('dashboard')}>
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-lg flex items-center justify-center shadow-emerald-200 shadow-md"><Calendar className="text-white w-5 h-5" /></div>
-            <span className="font-bold text-slate-800 text-lg tracking-tight hidden sm:block">FST Booking</span>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform">
+                <Calendar className="text-white w-6 h-6" />
+            </div>
+            <span className="font-extrabold text-slate-800 text-xl tracking-tight hidden sm:block">Reservefy</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block leading-tight"><div className="text-sm font-bold text-slate-800">{user.name}</div><div className="text-xs text-emerald-600 font-bold bg-emerald-50 inline-block px-2 py-0.5 rounded-full mt-0.5">{user.major}</div></div>
-            <button onClick={logout} className="p-2 hover:bg-red-50 hover:text-red-600 rounded-xl text-slate-400 transition-colors" title="Logout"><LogOut size={20} /></button>
+            <div className="text-right hidden sm:block leading-tight">
+                <div className="text-sm font-bold text-slate-800">{user.name}</div>
+                <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 inline-block px-2 py-0.5 rounded-md mt-0.5 uppercase tracking-wide">{user.major}</div>
+            </div>
+            <button onClick={logout} className="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl text-slate-400 transition-colors" title="Logout"><LogOut size={20} /></button>
           </div>
         </div>
       </nav>
-      <main className="max-w-5xl mx-auto p-4 mt-4">
+      <main className="max-w-5xl mx-auto p-4 mt-6 flex-grow w-full">
         {currentPage === 'dashboard' && <DashboardPage onChangePage={setCurrentPage} />}
         {currentPage === 'booking' && <BookingFlow onChangePage={setCurrentPage} />}
       </main>
+      
+      {/* COPYRIGHT FOOTER */}
+      <footer className="py-8 text-center border-t border-slate-200 mt-auto bg-white">
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Created by</p>
+          <p className="text-slate-800 font-extrabold text-sm">MAFFH Team © 2025</p>
+      </footer>
     </div>
   );
 }
