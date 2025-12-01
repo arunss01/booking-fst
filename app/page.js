@@ -377,10 +377,39 @@ const DashboardPage = ({ onChangePage }) => {
   const [showQuickCheck, setShowQuickCheck] = useState(false);
   const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
   
-  // LOGIKA BARU: Cek apakah jadwal sudah berlalu DENGAN MEMPERHITUNGKAN dashboardDate.
-  const isSchedulePast = (timeSelesaiStr) => {
-      // Menggabungkan tanggal di dashboard dengan jam selesai jadwal
-      const scheduleEndDatetime = new Date(dashboardDate + 'T' + timeSelesaiStr + ':00');
+  // =========================================================================
+  // BARU: Helper untuk menghitung tanggal spesifik dalam minggu yang dipilih
+  // =========================================================================
+  const getDayOffset = (dayName) => {
+    const dayMap = { 'SENIN': 1, 'SELASA': 2, 'RABU': 3, 'KAMIS': 4, 'JUMAT': 5 };
+    const selectedDate = new Date(dashboardDate);
+    
+    // Temukan hari Senin (hari pertama yang kita tampilkan) dari tanggal yang dipilih.
+    // getDay() mengembalikan 0=Minggu, 1=Senin, dst.
+    const dayOfWeek = selectedDate.getDay();
+    const startOfWeek = new Date(selectedDate);
+    // Jika tanggal yang dipilih adalah SENIN (dayOfWeek=1), offsetnya 0. 
+    // Jika SELASA (dayOfWeek=2), offsetnya -1.
+    const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; 
+    startOfWeek.setDate(selectedDate.getDate() + offset);
+
+    // Hitung tanggal untuk hari jadwal yang sebenarnya
+    const targetDayIndex = dayMap[dayName];
+    const targetDate = new Date(startOfWeek);
+    targetDate.setDate(startOfWeek.getDate() + (targetDayIndex - 1));
+
+    return targetDate.toISOString().split('T')[0];
+  };
+
+  // =========================================================================
+  // REVISI isSchedulePast: Kini menerima dayName dan timeSelesaiStr
+  // =========================================================================
+  const isSchedulePast = (dayName, timeSelesaiStr) => {
+      // 1. Dapatkan tanggal kalender spesifik untuk jadwal ini (mis. 2025-12-02)
+      const scheduleDateStr = getDayOffset(dayName);
+      
+      // 2. Gabungkan Tanggal Spesifik + Jam Selesai
+      const scheduleEndDatetime = new Date(scheduleDateStr + 'T' + timeSelesaiStr + ':00');
       const now = new Date();
 
       // Membandingkan Scheduled End Time dengan waktu saat ini (now)
@@ -466,8 +495,8 @@ const DashboardPage = ({ onChangePage }) => {
                 if (daySchedules.length === 0) return null;
 
                 return daySchedules.map((sch, index) => {
-                    // MENGGUNAKAN LOGIKA BARU isSchedulePast
-                    const isPast = isSchedulePast(sch.jamSelesai); 
+                    // REVISI: Menggunakan day untuk kalkulasi isPast yang akurat
+                    const isPast = isSchedulePast(day, sch.jamSelesai); 
                     const isCancelled = sch.status === 'cancelled';
                     return (
                     <tr key={sch.id} className={`transition-colors hover:bg-emerald-50/30 ${isCancelled ? 'bg-red-50/50' : ''}`}>
@@ -490,10 +519,8 @@ const DashboardPage = ({ onChangePage }) => {
                         {isCancelled ? (
                             <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
                         ) : isPast ? (
-                            // JIKA SUDAH BERLALU, TOMBOL CANCEL DIGEMBOK
                             <span className="text-slate-300 cursor-not-allowed" title="Sudah berlalu"><Lock size={18} className="mx-auto"/></span>
                         ) : (
-                            // JIKA BELUM BERLALU, TOMBOL CANCEL AKTIF
                             <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border border-transparent hover:border-red-100">
                                 Cancel
                             </button>
@@ -527,7 +554,7 @@ const DashboardPage = ({ onChangePage }) => {
                        <div>
                            <h4 className="font-bold text-lg text-slate-800 leading-tight">{b.roomName}</h4>
                            <p className="text-sm font-medium text-slate-500 mt-1">{b.date} • {b.startTime} - {b.endTime}</p>
-                           {/* MENGGUNAKAN LOGIKA isBookingPast yang benar */}
+                           {/* Menggunakan isBookingPast yang benar */}
                            {b.status === 'TERKONFIRMASI' && !isBookingPast(b.date, b.startTime) && (
                                <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:text-red-700 flex items-center gap-1 transition-colors">
                                    <X size={14}/> Batalkan Pesanan
@@ -756,7 +783,7 @@ function MainContent() {
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
-            <img src="/logo reservefy.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm"/>
+            <img src="/logo reservefy.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"/>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block leading-tight">
