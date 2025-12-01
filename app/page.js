@@ -334,7 +334,7 @@ const LoginPage = () => {
         <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 animate-fade-in-up">
             <div className="text-center mb-8">
                 <div className="flex justify-center mx-auto mb-4">
-                    <img src="/LOGO RESERVEFY.png" alt="Reservefy Logo" className="w-48 h-auto object-contain drop-shadow-md"/>
+                    <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-48 h-auto object-contain drop-shadow-sm"/>
                 </div>
             </div>
 
@@ -377,17 +377,23 @@ const DashboardPage = ({ onChangePage }) => {
   const [showQuickCheck, setShowQuickCheck] = useState(false);
   const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
   
-  const isSchedulePast = (timeStr) => {
+  // LOGIKA BARU: Cek apakah jadwal sudah berlalu DENGAN MEMPERHITUNGKAN dashboardDate.
+  const isSchedulePast = (timeSelesaiStr) => {
+      // Menggabungkan tanggal di dashboard dengan jam selesai jadwal
+      const scheduleEndDatetime = new Date(dashboardDate + 'T' + timeSelesaiStr + ':00');
       const now = new Date();
-      const selectedDate = new Date(dashboardDate);
-      if (selectedDate.setHours(0,0,0,0) < now.setHours(0,0,0,0)) return true;
-      if (selectedDate.setHours(0,0,0,0) > now.setHours(0,0,0,0)) return false;
-      const [h, m] = timeStr.split(':').map(Number);
-      const scheduleTime = new Date();
-      scheduleTime.setHours(h, m, 0, 0);
-      return scheduleTime < new Date();
+
+      // Membandingkan Scheduled End Time dengan waktu saat ini (now)
+      return scheduleEndDatetime <= now;
   };
 
+  // LOGIKA LAMA (BOOKING)
+  const isBookingPast = (date, startTimeStr) => {
+      const bookingStartDatetime = new Date(date + 'T' + startTimeStr + ':00');
+      const now = new Date();
+      return bookingStartDatetime < now;
+  };
+  
   const [modalData, setModalData] = useState({ isOpen: false, type: 'cancel_schedule', data: null });
 
   return (
@@ -460,7 +466,8 @@ const DashboardPage = ({ onChangePage }) => {
                 if (daySchedules.length === 0) return null;
 
                 return daySchedules.map((sch, index) => {
-                    const isPast = isSchedulePast(sch.jamMulai);
+                    // MENGGUNAKAN LOGIKA BARU isSchedulePast
+                    const isPast = isSchedulePast(sch.jamSelesai); 
                     const isCancelled = sch.status === 'cancelled';
                     return (
                     <tr key={sch.id} className={`transition-colors hover:bg-emerald-50/30 ${isCancelled ? 'bg-red-50/50' : ''}`}>
@@ -483,8 +490,10 @@ const DashboardPage = ({ onChangePage }) => {
                         {isCancelled ? (
                             <button disabled className="text-slate-300 cursor-not-allowed"><LogOut size={18} /></button>
                         ) : isPast ? (
+                            // JIKA SUDAH BERLALU, TOMBOL CANCEL DIGEMBOK
                             <span className="text-slate-300 cursor-not-allowed" title="Sudah berlalu"><Lock size={18} className="mx-auto"/></span>
                         ) : (
+                            // JIKA BELUM BERLALU, TOMBOL CANCEL AKTIF
                             <button onClick={() => setModalData({ isOpen: true, type: 'cancel_schedule', data: sch })} className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border border-transparent hover:border-red-100">
                                 Cancel
                             </button>
@@ -518,7 +527,8 @@ const DashboardPage = ({ onChangePage }) => {
                        <div>
                            <h4 className="font-bold text-lg text-slate-800 leading-tight">{b.roomName}</h4>
                            <p className="text-sm font-medium text-slate-500 mt-1">{b.date} • {b.startTime} - {b.endTime}</p>
-                           {b.status === 'TERKONFIRMASI' && new Date(b.date + 'T' + b.startTime) > new Date() && (
+                           {/* MENGGUNAKAN LOGIKA isBookingPast yang benar */}
+                           {b.status === 'TERKONFIRMASI' && !isBookingPast(b.date, b.startTime) && (
                                <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:text-red-700 flex items-center gap-1 transition-colors">
                                    <X size={14}/> Batalkan Pesanan
                                </button>
@@ -746,7 +756,7 @@ function MainContent() {
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
-            <img src="/LOGO RESERVEFY.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"/>
+            <img src="/logo reservefy.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm"/>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block leading-tight">
