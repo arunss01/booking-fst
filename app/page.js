@@ -751,7 +751,7 @@ const LoginHero = () => {
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
                 <img 
-                    src="/maskot reservefy.jpg" 
+                    src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
                     className="w-4/5 h-auto object-contain maskot-animated rounded-full shadow-2xl border-4 border-white/50 cursor-pointer transition-transform duration-300 hover:scale-105"
                     // Animasi Interaktif: merespons hover
