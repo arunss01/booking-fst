@@ -712,7 +712,7 @@ const BookingFlow = ({ onChangePage }) => {
 };
 
 // =========================================================================
-// Halaman Login Baru (Login Layout Messimo + Maskot Reservefy)
+// Halaman Login Baru (Revisi Estetika Maskot dan Teks)
 // =========================================================================
 
 const LoginHero = () => {
@@ -734,7 +734,8 @@ const LoginHero = () => {
             </div>
             
             {/* Maskot dengan Animasi */}
-            {/* Animasi: slide-in (saat muncul) + floating (idle) */}
+            {/* REVISI: Kecepatan animasi idle (Floating) dipercepat dari 6s menjadi 3.5s */}
+            {/* REVISI: Menghapus border dan shadow keras pada maskot */}
             <style jsx global>{`
                 @keyframes slideIn {
                     from { opacity: 0; transform: translateY(50px) scale(0.8); }
@@ -745,23 +746,27 @@ const LoginHero = () => {
                     50% { transform: translateY(-8px); }
                 }
                 .maskot-animated {
-                    animation: slideIn 1s ease-out forwards, floating 6s ease-in-out infinite 1s;
+                    /* Animasi Idle dipercepat dari 6s menjadi 3.5s */
+                    animation: slideIn 1s ease-out forwards, floating 3.5s ease-in-out infinite 1s;
+                    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); /* Menambah kesan 3D (Drop Shadow) */
                 }
             `}</style>
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
                 <img 
-                    src="/maskot reservefy.png" 
+                    src="/maskot reservefy.jpg" 
                     alt="Maskot Reservefy" 
-                    className="w-4/5 h-auto object-contain maskot-animated rounded-full shadow-2xl border-4 border-white/50 cursor-pointer transition-transform duration-300 hover:scale-105"
+                    className="w-4/5 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
+                    // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
                     // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
                     onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
                     style={{ animationDelay: '0.3s' }}
                 />
                 <h1 className="text-3xl font-extrabold mt-8 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
-                <p className="text-emerald-100 text-sm max-w-xs text-center">
-                    Sistem Booking Ruangan Fakultas Sains dan Teknologi berbasis Poin SKS.
+                {/* REVISI: Menghapus tulisan bertele-tele */}
+                <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold">
+                    Sistem Booking Ruangan Berbasis Poin SKS.
                 </p>
             </div>
         </div>
@@ -782,7 +787,8 @@ const LoginForm = () => {
                     <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
                 </div>
                 <h2 className="text-xl font-bold text-slate-700 mt-4">Masuk ke Akun Anda</h2>
-                <p className="text-sm text-slate-500">Gunakan NIM dan Password SIAKAD Anda.</p>
+                {/* REVISI: Menghapus referensi SIAKAD */}
+                <p className="text-sm text-slate-500">Gunakan NIM dan Password Akun Reservefy Anda.</p>
             </div>
 
             {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
