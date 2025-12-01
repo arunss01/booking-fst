@@ -754,7 +754,7 @@ const LoginHero = () => {
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
                 <img 
-                    src="/maskot reservefy.jpg" 
+                    src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
                     className="w-4/5 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
                     // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
