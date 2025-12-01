@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, Edit3, Filter } from 'lucide-react';
+import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertCircle, Lock, Eye, EyeOff, Hash, Layers, Timer, ShieldAlert, Clock, X, ArrowRight, Edit3, Filter, MessageSquare, Phone } from 'lucide-react';
 import { loginUser, getInitialData, getAllSchedules, updateScheduleAction, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
 // --- CONTEXT ---
+// (Bagian Context & Provider tidak berubah)
 const BookingContext = createContext();
 
 const BookingProvider = ({ children }) => {
@@ -98,7 +99,7 @@ const BookingProvider = ({ children }) => {
 const useBooking = () => useContext(BookingContext);
 
 // --- COMPONENTS ---
-
+// (Komponen Modal, QuickCheckModal, AdminDashboard, DashboardPage, BookingFlow tidak berubah)
 const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger" }) => {
     if (!isOpen) return null;
     return (
@@ -208,8 +209,7 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     );
 };
 
-// --- PAGES ---
-
+// ... (AdminDashboard dan DashboardPage tidak berubah)
 const AdminDashboard = () => {
     const { user } = useBooking();
     const [allSchedules, setAllSchedules] = useState([]);
@@ -315,61 +315,6 @@ const AdminDashboard = () => {
             </div>
         </div>
     );
-};
-
-const LoginPage = () => {
-  const { login, authError, isLoading } = useBooking();
-  const [nim, setNim] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center font-sans relative">
-      <div className="absolute inset-0 z-0">
-        <img src="/IMG-20251127-WA0007.jpg" alt="Background" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-emerald-900/60 backdrop-blur-[2px]"></div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 animate-fade-in-up">
-            <div className="text-center mb-8">
-                <div className="flex justify-center mx-auto mb-4">
-                    <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-48 h-auto object-contain drop-shadow-sm"/>
-                </div>
-            </div>
-
-            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
-            
-            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-5">
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
-                <div className="relative">
-                    <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
-                <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                </div>
-            </div>
-            <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
-                {isLoading ? 'Memproses...' : 'Masuk'}
-            </button>
-            </form>
-            
-            <div className="mt-8 text-center pt-6 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Powered by FAHAM Team</p>
-            </div>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const DashboardPage = ({ onChangePage }) => {
@@ -495,7 +440,7 @@ const DashboardPage = ({ onChangePage }) => {
                 if (daySchedules.length === 0) return null;
 
                 return daySchedules.map((sch, index) => {
-                    // REVISI: Menggunakan day untuk kalkulasi isPast yang akurat
+                    // MENGGUNAKAN LOGIKA BARU isSchedulePast
                     const isPast = isSchedulePast(day, sch.jamSelesai); 
                     const isCancelled = sch.status === 'cancelled';
                     return (
@@ -765,6 +710,145 @@ const BookingFlow = ({ onChangePage }) => {
         </div>
       )
 };
+
+// =========================================================================
+// Halaman Login Baru (Login Layout Messimo + Maskot Reservefy)
+// =========================================================================
+
+const LoginHero = () => {
+    return (
+        <div className="relative h-full w-full p-8 md:p-12 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-xl">
+            {/* Animasi Background (Minimalis/Berani) */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                        <radialGradient id="grad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" style={{stopColor: "rgba(255,255,255,0.2)"}} />
+                            <stop offset="100%" style={{stopColor: "rgba(255,255,255,0)"}} />
+                        </radialGradient>
+                    </defs>
+                    <rect width="100" height="100" fill="url(#grad)" />
+                    <circle cx="20" cy="80" r="10" fill="rgba(255,255,255,0.15)" />
+                    <circle cx="80" cy="30" r="15" fill="rgba(255,255,255,0.1)" />
+                </svg>
+            </div>
+            
+            {/* Maskot dengan Animasi */}
+            {/* Animasi: slide-in (saat muncul) + floating (idle) */}
+            <style jsx global>{`
+                @keyframes slideIn {
+                    from { opacity: 0; transform: translateY(50px) scale(0.8); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                @keyframes floating {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-8px); }
+                }
+                .maskot-animated {
+                    animation: slideIn 1s ease-out forwards, floating 6s ease-in-out infinite 1s;
+                }
+            `}</style>
+
+            <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
+                <img 
+                    src="/maskot reservefy.jpg" 
+                    alt="Maskot Reservefy" 
+                    className="w-4/5 h-auto object-contain maskot-animated rounded-full shadow-2xl border-4 border-white/50 cursor-pointer transition-transform duration-300 hover:scale-105"
+                    // Animasi Interaktif: merespons hover
+                    onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+                    onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+                    style={{ animationDelay: '0.3s' }}
+                />
+                <h1 className="text-3xl font-extrabold mt-8 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
+                <p className="text-emerald-100 text-sm max-w-xs text-center">
+                    Sistem Booking Ruangan Fakultas Sains dan Teknologi berbasis Poin SKS.
+                </p>
+            </div>
+        </div>
+    );
+}
+
+const LoginForm = () => {
+    const { login, authError, isLoading } = useBooking();
+    const [nim, setNim] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
+    return (
+        <div className="w-full max-w-md p-8 md:p-12">
+            <div className="text-center mb-10">
+                <div className="flex justify-center mx-auto mb-4">
+                    {/* Logo Reservefy diperbesar */}
+                    <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
+                </div>
+                <h2 className="text-xl font-bold text-slate-700 mt-4">Masuk ke Akun Anda</h2>
+                <p className="text-sm text-slate-500">Gunakan NIM dan Password SIAKAD Anda.</p>
+            </div>
+
+            {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
+            
+            <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
+                    <div className="relative">
+                        <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                        <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
+                    <div className="relative">
+                        <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4">
+                    {isLoading ? 'Memproses...' : 'Masuk'}
+                </button>
+            </form>
+            
+            {/* Keterangan Login dan Link Bantuan */}
+            <div className="mt-8 text-center pt-6 border-t border-slate-100 space-y-3">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    Jika Anda memiliki kendala login atau membutuhkan akun baru, silakan hubungi Admin Akademik.
+                </p>
+                <div className="flex justify-center gap-4">
+                    <a href="mailto:admin@reservefy.uin.ac.id" className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                        <MessageSquare size={16}/> Email Admin
+                    </a>
+                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                        <Phone size={16}/> WhatsApp Admin
+                    </a>
+                </div>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold pt-4">Powered by FAHAM Team</p>
+            </div>
+        </div>
+    );
+}
+
+const LoginPage = () => {
+    return (
+        // Mengubah layout utama menjadi Flex/Grid 2 kolom di layar besar
+        <div className="min-h-screen flex items-center justify-center font-sans bg-gray-50 p-4">
+            <div className="relative z-10 w-full max-w-6xl h-[650px] flex rounded-3xl overflow-hidden shadow-2xl shadow-slate-300 border border-white/50 animate-fade-in-up">
+                
+                {/* Kolom Kiri (50/50 - Maskot & Background Gradasi) */}
+                <div className="hidden md:flex md:w-1/2">
+                    <LoginHero />
+                </div>
+
+                {/* Kolom Kanan (50/50 - Form Login) */}
+                <div className="w-full md:w-1/2 flex items-center justify-center bg-white/95">
+                    <LoginForm />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export default function App() {
   return (
