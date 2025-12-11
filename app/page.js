@@ -4,7 +4,6 @@ import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertC
 import { loginUser, getInitialData, getAllSchedules, updateScheduleAction, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
 // --- CONTEXT ---
-// (Bagian Context & Provider tidak berubah)
 const BookingContext = createContext();
 
 const BookingProvider = ({ children }) => {
@@ -733,40 +732,40 @@ const LoginHero = () => {
                 </svg>
             </div>
             
-            {/* Maskot dengan Animasi */}
-            {/* REVISI: Kecepatan animasi idle (Floating) dipercepat dari 6s menjadi 3.5s */}
-            {/* REVISI: Menghapus border dan shadow keras pada maskot */}
+            {/* Hapus CSS animasi di sini */}
             <style jsx global>{`
                 @keyframes slideIn {
                     from { opacity: 0; transform: translateY(50px) scale(0.8); }
                     to { opacity: 1; transform: translateY(0) scale(1); }
                 }
-                @keyframes floating {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-8px); }
-                }
                 .maskot-animated {
-                    /* Animasi Idle dipercepat dari 6s menjadi 3.5s */
-                    animation: slideIn 1s ease-out forwards, floating 3.5s ease-in-out infinite 1s;
-                    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); /* Menambah kesan 3D (Drop Shadow) */
+                    /* Mempertahankan slideIn untuk transisi awal */
+                    animation: slideIn 1s ease-out forwards;
+                    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
                 }
             `}</style>
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
-                <img 
-                    src="/maskot reservefy.png" 
-                    alt="Maskot Reservefy" 
-                    className="w-4/5 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
-                    // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
-                    // Animasi Interaktif: merespons hover
-                    onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
-                    onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+                
+                {/* REVISI: Mengganti tag <img> dengan <video> */}
+                <video
+                    // Ganti dengan path file video maskot Anda (misalnya: /maskot-video.mp4)
+                    src="/maskot-video.mp4" 
+                    alt="Maskot Reservefy Video" 
+                    className="w-4/5 h-auto object-contain maskot-animated transition-transform duration-300 hover:scale-105"
                     style={{ animationDelay: '0.3s' }}
+                    
+                    // Atribut Wajib Video Latar Belakang
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline
+                    // Tidak perlu event onMouseEnter/onMouseLeave karena sudah video
                 />
+
                 <h1 className="text-3xl font-extrabold mt-8 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
-                {/* REVISI: Menghapus tulisan bertele-tele */}
                 <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold">
-                    Sistem Booking Ruangan Berbasis Poin SKS.
+                    Sistem Manajemen Ruangan Berbasis Poin SKS.
                 </p>
             </div>
         </div>
