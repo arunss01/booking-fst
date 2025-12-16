@@ -716,7 +716,7 @@ const BookingFlow = ({ onChangePage }) => {
 
 const LoginHero = () => {
     return (
-        <div className="relative h-full w-full p-8 md:p-12 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-xl">
+        <div className="relative h-full w-full p-8 md:p-12 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-xl flex flex-col justify-center">
             {/* Animasi Background (Minimalis/Berani) */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
                 <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -752,21 +752,22 @@ const LoginHero = () => {
                 }
             `}</style>
 
-            <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
+            <div className="flex flex-col items-center justify-center relative z-10 w-full">
                 <img 
                     src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
-                    // REVISI: Mengubah ukuran menjadi w-full agar lebih besar dan mengisi ruang
-                    className="w-full h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
+                    // REVISI: Ukuran diubah jadi w-3/4 (75%) agar pas & tidak terlalu besar
+                    // REVISI: Margin bawah dikurangi jadi 10px (sebelumnya 20px/40px)
+                    className="w-3/4 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
                     // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
                     // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
                     onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
-                    style={{ animationDelay: '0.3s', marginBottom: '20px' }}
+                    style={{ animationDelay: '0.3s', marginBottom: '10px' }}
                 />
-                <h1 className="text-3xl font-extrabold mt-4 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
+                <h1 className="text-3xl font-extrabold text-white tracking-tight drop-shadow-md text-center mt-2">Selamat Datang di Reservefy</h1>
                 {/* REVISI: Menghapus tulisan bertele-tele */}
-                <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold">
+                <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold mt-1">
                     Sistem Booking Ruangan Berbasis Poin SKS.
                 </p>
             </div>
@@ -781,30 +782,29 @@ const LoginForm = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="w-full max-w-md p-8 md:p-12">
-            {/* REVISI: Menambahkan margin-top (mt-10) agar logo tidak terlalu ke atas */}
+        <div className="w-full max-w-lg p-8 md:p-12"> {/* Lebar max-w-lg agar lebih luas */}
             <div className="text-center mb-10 mt-10">
                 <div className="flex justify-center mx-auto mb-6">
                     {/* Logo Reservefy diperbesar */}
                     <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
                 </div>
                 <h2 className="text-xl font-bold text-slate-700 mt-4">Masuk ke Akun Anda</h2>
-                {/* REVISI: Menghapus referensi SIAKAD */}
-                <p className="text-sm text-slate-500">Gunakan NIM dan Password Akun Reservefy Anda.</p>
+                {/* REVISI: Mengubah teks instruksi menjadi Username */}
+                <p className="text-sm text-slate-500">Gunakan Username dan Password Akun Reservefy Anda.</p>
             </div>
 
             {authError && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-pulse font-medium"><AlertCircle size={16} /> {authError}</div>}
             
             <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">USERNAME</label>
                     <div className="relative">
                         <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                        <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
+                        <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan Username" />
                     </div>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Password</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">PASSWORD</label>
                     <div className="relative">
                         <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
                         <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="••••••" />
