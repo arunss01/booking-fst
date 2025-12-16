@@ -4,7 +4,6 @@ import { Calendar, MapPin, User, LogOut, PlusCircle, CheckCircle, Search, AlertC
 import { loginUser, getInitialData, getAllSchedules, updateScheduleAction, cancelScheduleAction, cancelBookingAction, checkRoomAvailabilityAction, bookRoomAction } from './actions';
 
 // --- CONTEXT ---
-// (Bagian Context & Provider tidak berubah)
 const BookingContext = createContext();
 
 const BookingProvider = ({ children }) => {
@@ -736,6 +735,7 @@ const LoginHero = () => {
             {/* Maskot dengan Animasi */}
             {/* REVISI: Kecepatan animasi idle (Floating) dipercepat dari 6s menjadi 3.5s */}
             {/* REVISI: Menghapus border dan shadow keras pada maskot */}
+            {/* KOREKSI: Memastikan path gambar adalah PNG */}
             <style jsx global>{`
                 @keyframes slideIn {
                     from { opacity: 0; transform: translateY(50px) scale(0.8); }
@@ -754,16 +754,16 @@ const LoginHero = () => {
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
                 <img 
-                    src="/MASKOT RESERVEFY.png" 
-                    alt="" 
-                    className="w-4/5 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
+                    src="/maskot reservefy.png" 
+                    alt="Maskot Reservefy" 
+                    className="w-[90%] h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
                     // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
                     // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
                     onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
-                    style={{ animationDelay: '0.3s' }}
+                    style={{ animationDelay: '0.3s', marginBottom: '20px' }}
                 />
-                <h1 className="text-3xl font-extrabold mt-8 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
+                <h1 className="text-3xl font-extrabold mt-4 text-white tracking-tight drop-shadow-md">Selamat Datang di Reservefy</h1>
                 {/* REVISI: Menghapus tulisan bertele-tele */}
                 <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold">
                     Sistem Booking Ruangan Berbasis Poin SKS.
@@ -781,8 +781,8 @@ const LoginForm = () => {
 
     return (
         <div className="w-full max-w-md p-8 md:p-12">
-            <div className="text-center mb-10">
-                <div className="flex justify-center mx-auto mb-4">
+            <div className="text-center mb-10 mt-6">
+                <div className="flex justify-center mx-auto mb-6">
                     {/* Logo Reservefy diperbesar */}
                     <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
                 </div>
