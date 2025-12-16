@@ -756,7 +756,7 @@ const LoginHero = () => {
                 <img 
                     src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
-                    className="w-[100%] h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
+                    className="w-[75%] h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
                     // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
                     // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
