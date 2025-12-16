@@ -1,18 +1,26 @@
 "use server";
 
-import prisma from '@/lib/prisma';
+// --- PERBAIKAN IMPORT PRISMA START ---
+// Menghapus import alias yang bermasalah dan menggantinya dengan import standar.
+// Asumsi: Anda sudah menginstal @prisma/client dan menjalankan 'npx prisma generate'
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+// --- PERBAIKAN IMPORT PRISMA END ---
+
 import { revalidatePath } from 'next/cache';
 
 // --- AUTH & DATA ---
 
 export async function loginUser(nim, password) {
   try {
+    // NIM di sini adalah 'username' Kode Kelas
     const user = await prisma.user.findUnique({ where: { nim } });
     if (user && user.password === password) {
       const { password, ...userData } = user;
       return { success: true, user: userData };
     }
-    return { success: false, message: "NIM atau Password salah." };
+    // REVISI PESAN: Mengganti NIM menjadi Username
+    return { success: false, message: "Username atau Password salah." };
   } catch (error) {
     return { success: false, message: "Server Error." };
   }
