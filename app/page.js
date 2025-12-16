@@ -754,9 +754,10 @@ const LoginHero = () => {
 
             <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
                 <img 
-                    src="/maskot reservefy.png"
+                    src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
-                    className="w-[70%] h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
+                    // REVISI: Mengubah ukuran menjadi w-full agar lebih besar dan mengisi ruang
+                    className="w-full h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
                     // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
                     // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
@@ -780,8 +781,9 @@ const LoginForm = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="w-full max-w-md p-8 md:p-28">
-            <div className="text-center mb-10 mt-6">
+        <div className="w-full max-w-md p-8 md:p-12">
+            {/* REVISI: Menambahkan margin-top (mt-10) agar logo tidak terlalu ke atas */}
+            <div className="text-center mb-10 mt-10">
                 <div className="flex justify-center mx-auto mb-6">
                     {/* Logo Reservefy diperbesar */}
                     <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
@@ -795,10 +797,10 @@ const LoginForm = () => {
             
             <form onSubmit={(e) => { e.preventDefault(); if(nim && password) login(nim, password); }} className="space-y-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Username</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">NIM / Username</label>
                     <div className="relative">
                         <User className="absolute left-4 top-3.5 text-slate-400" size={20} />
-                        <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan Username" />
+                        <input type="text" value={nim} onChange={(e) => setNim(e.target.value)} className="w-full pl-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none font-bold text-slate-800 transition-all" placeholder="Masukkan NIM" />
                     </div>
                 </div>
                 <div>
