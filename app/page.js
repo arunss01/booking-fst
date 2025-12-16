@@ -98,7 +98,6 @@ const BookingProvider = ({ children }) => {
 const useBooking = () => useContext(BookingContext);
 
 // --- COMPONENTS ---
-// (Komponen Modal, QuickCheckModal, AdminDashboard, DashboardPage, BookingFlow tidak berubah)
 const Modal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Lanjutkan", type = "danger" }) => {
     if (!isOpen) return null;
     return (
@@ -208,7 +207,6 @@ const QuickCheckModal = ({ isOpen, onClose, onCheck }) => {
     );
 };
 
-// ... (AdminDashboard dan DashboardPage tidak berubah)
 const AdminDashboard = () => {
     const { user } = useBooking();
     const [allSchedules, setAllSchedules] = useState([]);
@@ -284,6 +282,7 @@ const AdminDashboard = () => {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
                 <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Admin Dashboard</h2>
                 <p className="text-slate-500 text-sm mb-6">Kelola Jadwal Paten Perkuliahan (Master Schedule).</p>
+                {/* REVISI: Menggunakan flex-wrap untuk filter agar responsif di mobile */}
                 <div className="flex flex-wrap gap-4 items-end">
                     <div><label className="block text-xs font-bold text-slate-400 mb-1">Filter Kelas</label><select value={filterKelas} onChange={e => setFilterKelas(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]"><option value="Semua">Semua Kelas</option>{uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                     <div><label className="block text-xs font-bold text-slate-400 mb-1">Filter Hari</label><select value={filterDay} onChange={e => setFilterDay(e.target.value)} className="border p-2 rounded-lg text-sm font-bold text-slate-700 min-w-[150px]"><option value="Semua">Semua Hari</option>{['SENIN','SELASA','RABU','KAMIS','JUMAT'].map(d => <option key={d} value={d}>{d}</option>)}</select></div>
@@ -293,7 +292,7 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
                 {loading ? <div className="p-10 text-center text-slate-400">Memuat data...</div> : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-sm min-w-[700px]"> {/* MIN-WIDTH agar tabel tetap berfungsi di mobile */}
                             <thead className="bg-slate-800 text-white uppercase text-xs font-bold">
                                 <tr><th className="p-4">Kelas</th><th className="p-4">Hari/Jam</th><th className="p-4">Mata Kuliah</th><th className="p-4">Ruang</th><th className="p-4 text-center">Aksi</th></tr>
                             </thead>
@@ -321,46 +320,26 @@ const DashboardPage = ({ onChangePage }) => {
   const [showQuickCheck, setShowQuickCheck] = useState(false);
   const weekDays = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT'];
   
-  // =========================================================================
-  // BARU: Helper untuk menghitung tanggal spesifik dalam minggu yang dipilih
-  // =========================================================================
   const getDayOffset = (dayName) => {
     const dayMap = { 'SENIN': 1, 'SELASA': 2, 'RABU': 3, 'KAMIS': 4, 'JUMAT': 5 };
     const selectedDate = new Date(dashboardDate);
-    
-    // Temukan hari Senin (hari pertama yang kita tampilkan) dari tanggal yang dipilih.
-    // getDay() mengembalikan 0=Minggu, 1=Senin, dst.
     const dayOfWeek = selectedDate.getDay();
     const startOfWeek = new Date(selectedDate);
-    // Jika tanggal yang dipilih adalah SENIN (dayOfWeek=1), offsetnya 0. 
-    // Jika SELASA (dayOfWeek=2), offsetnya -1.
     const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; 
     startOfWeek.setDate(selectedDate.getDate() + offset);
-
-    // Hitung tanggal untuk hari jadwal yang sebenarnya
     const targetDayIndex = dayMap[dayName];
     const targetDate = new Date(startOfWeek);
     targetDate.setDate(startOfWeek.getDate() + (targetDayIndex - 1));
-
     return targetDate.toISOString().split('T')[0];
   };
 
-  // =========================================================================
-  // REVISI isSchedulePast: Kini menerima dayName dan timeSelesaiStr
-  // =========================================================================
   const isSchedulePast = (dayName, timeSelesaiStr) => {
-      // 1. Dapatkan tanggal kalender spesifik untuk jadwal ini (mis. 2025-12-02)
       const scheduleDateStr = getDayOffset(dayName);
-      
-      // 2. Gabungkan Tanggal Spesifik + Jam Selesai
       const scheduleEndDatetime = new Date(scheduleDateStr + 'T' + timeSelesaiStr + ':00');
       const now = new Date();
-
-      // Membandingkan Scheduled End Time dengan waktu saat ini (now)
       return scheduleEndDatetime <= now;
   };
 
-  // LOGIKA LAMA (BOOKING)
   const isBookingPast = (date, startTimeStr) => {
       const bookingStartDatetime = new Date(date + 'T' + startTimeStr + ':00');
       const now = new Date();
@@ -396,34 +375,36 @@ const DashboardPage = ({ onChangePage }) => {
           <img src="/IMG-20251127-WA0013.jpg" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Hero"/>
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/90 via-emerald-800/70 to-emerald-600/30"></div>
           
-          <div className="absolute inset-0 p-8 flex flex-col justify-center">
+          <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-center"> {/* REVISI: Padding mobile */}
               <div className="text-emerald-100 font-bold text-xs uppercase tracking-widest mb-1">Saldo Poin Anda</div>
-              <div className="text-5xl font-extrabold text-white tracking-tight mb-6">{points} <span className="text-2xl font-medium text-emerald-200">SKS</span></div>
+              <div className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-4 sm:mb-6">{points} <span className="text-xl sm:text-2xl font-medium text-emerald-200">SKS</span></div> {/* REVISI: Ukuran teks mobile */}
               
-              <div className="flex gap-3">
-                  <button onClick={() => onChangePage('booking')} disabled={points === 0} className="bg-white text-emerald-800 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-emerald-50 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              {/* REVISI: Mengubah tampilan tombol menjadi vertikal di mobile, horizontal di layar kecil ke atas */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                  <button onClick={() => onChangePage('booking')} disabled={points === 0} className="bg-white text-emerald-800 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-emerald-50 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base">
                       <PlusCircle size={18}/> Booking Ruang
                   </button>
-                  <button onClick={() => setShowQuickCheck(true)} className="bg-emerald-900/40 backdrop-blur-md text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900/60 flex items-center gap-2 transition-all">
+                  <button onClick={() => setShowQuickCheck(true)} className="bg-emerald-900/40 backdrop-blur-md text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900/60 flex items-center justify-center gap-2 transition-all text-sm sm:text-base">
                       <Search size={18}/> Cek Ketersediaan
                   </button>
               </div>
           </div>
       </div>
 
-      <div className="flex items-center justify-between mt-8 mb-2">
-          <h3 className="font-extrabold text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah Mingguan</h3>
-          <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center gap-2 shadow-sm">
-              <div className="px-3 py-1.5 bg-emerald-50 rounded-lg text-xs font-bold text-emerald-700 uppercase tracking-wide">Pilih Minggu</div>
+      <div className="flex items-center justify-between mt-8 mb-2 flex-wrap gap-2"> {/* REVISI: Flex-wrap untuk mobile */}
+          <h3 className="font-extrabold text-xl sm:text-2xl text-slate-800 flex items-center gap-2">Jadwal Kuliah Mingguan</h3>
+          <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center gap-2 shadow-sm shrink-0">
+              <div className="px-3 py-1.5 bg-emerald-50 rounded-lg text-xs font-bold text-emerald-700 uppercase tracking-wide hidden sm:block">Pilih Minggu</div> {/* Sembunyikan label di mobile */}
               <input type="date" value={dashboardDate} onChange={(e) => setDashboardDate(e.target.value)} className="text-sm font-bold text-slate-800 bg-transparent outline-none pr-2 cursor-pointer"/>
           </div>
       </div>
 
-      {/* TABEL JADWAL MINGGUAN (DENGAN HEADER HIJAU) */}
+      {/* TABEL JADWAL MINGGUAN */}
       <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        {/* REVISI: overflow-x-auto memungkinkan tabel di-scroll horizontal di mobile */}
         <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-            {/* HEADER WARNA EMERALD */}
+            {/* MIN-WIDTH agar kolom tabel tidak terlalu sempit di mobile */}
+            <table className="w-full text-left text-sm min-w-[650px]"> 
             <thead className="bg-emerald-600 text-white uppercase text-xs font-bold tracking-wider">
                 <tr>
                 <th className="p-4 w-24">Hari</th>
@@ -439,7 +420,6 @@ const DashboardPage = ({ onChangePage }) => {
                 if (daySchedules.length === 0) return null;
 
                 return daySchedules.map((sch, index) => {
-                    // MENGGUNAKAN LOGIKA BARU isSchedulePast
                     const isPast = isSchedulePast(day, sch.jamSelesai); 
                     const isCancelled = sch.status === 'cancelled';
                     return (
@@ -481,8 +461,8 @@ const DashboardPage = ({ onChangePage }) => {
 
       {myBookings && myBookings.length > 0 && (
         <div className="mt-10">
-           <h3 className="font-extrabold text-2xl text-slate-800 mb-6 flex items-center gap-2">Riwayat Booking</h3>
-           <div className="grid gap-5 md:grid-cols-2">
+           <h3 className="font-extrabold text-xl sm:text-2xl text-slate-800 mb-6 flex items-center gap-2">Riwayat Booking</h3>
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3"> {/* Tetap grid 2 kolom di layar desktop */}
              {myBookings.map(b => {
                if (!b) return null;
                return (
@@ -498,7 +478,6 @@ const DashboardPage = ({ onChangePage }) => {
                        <div>
                            <h4 className="font-bold text-lg text-slate-800 leading-tight">{b.roomName}</h4>
                            <p className="text-sm font-medium text-slate-500 mt-1">{b.date} • {b.startTime} - {b.endTime}</p>
-                           {/* Menggunakan isBookingPast yang benar */}
                            {b.status === 'TERKONFIRMASI' && !isBookingPast(b.date, b.startTime) && (
                                <button onClick={() => setModalData({ isOpen: true, type: 'cancel_booking', data: b })} className="mt-3 text-red-500 text-xs font-bold hover:text-red-700 flex items-center gap-1 transition-colors">
                                    <X size={14}/> Batalkan Pesanan
@@ -550,7 +529,6 @@ const BookingFlow = ({ onChangePage }) => {
       e.preventDefault();
       if (!date || !startTime) return alert("Mohon isi tanggal dan jam.");
       
-      // VALIDASI WAKTU BOOKING
       const today = new Date().toISOString().split('T')[0];
       if (date < today) return alert("Tidak bisa memilih tanggal yang sudah berlalu.");
 
@@ -634,6 +612,7 @@ const BookingFlow = ({ onChangePage }) => {
     if (step === 1) {
         return (
           <div className="animate-fade-in relative pb-20">
+            {/* REVISI: Mengubah posisi timer di mobile */}
             <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-md text-slate-800 p-3 rounded-full shadow-2xl flex items-center gap-4 w-fit mx-auto mb-8 border border-slate-200 px-6">
                  <Timer className="text-emerald-600" size={24} />
                  <div>
@@ -651,19 +630,22 @@ const BookingFlow = ({ onChangePage }) => {
                 </div>
             </Modal>
             
-            <div className="flex items-center justify-between mb-6 px-2">
+            {/* REVISI: Mengubah tampilan info waktu di mobile */}
+            <div className="flex items-center justify-between mb-6 px-2 flex-wrap gap-2"> 
                <button onClick={() => setStep(0)} className="text-slate-500 flex items-center gap-2 hover:text-emerald-600 text-sm font-bold transition-colors">← Ubah Pencarian</button>
                <div className="text-right"><p className="text-xs text-slate-400 font-bold uppercase">Status Pukul</p><p className="font-bold text-slate-700">{date} • {startTime}</p></div>
             </div>
 
-            <div className="flex gap-3 mb-8 overflow-x-auto pb-2 px-1">
+            {/* REVISI: Navigasi Lantai agar rapi di mobile */}
+            <div className="flex gap-3 mb-8 overflow-x-auto pb-2 px-1 justify-between sm:justify-center">
               {[2, 3, 4].map(floor => (
-                  <button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-sm whitespace-nowrap ${selectedFloor === floor ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
+                  <button key={floor} onClick={() => setSelectedFloor(floor)} className={`px-4 sm:px-6 py-2.5 rounded-xl sm:rounded-2xl text-sm font-bold transition-all shadow-sm whitespace-nowrap ${selectedFloor === floor ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
                       Lantai {floor}
                   </button>
               ))}
             </div>
 
+            {/* REVISI: Grid 1 kolom di mobile, 2 kolom di desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {visibleRooms.map((room) => (
                 <div key={room.id} className={`p-6 rounded-3xl border-2 transition-all flex flex-col justify-between min-h-[160px] ${room.isAvailable ? 'bg-white border-white shadow-lg hover:border-emerald-400 hover:shadow-xl cursor-pointer group' : 'bg-slate-50 border-slate-100 opacity-70 grayscale'}`} onClick={() => room.isAvailable && requestBooking(room)}>
@@ -699,8 +681,8 @@ const BookingFlow = ({ onChangePage }) => {
             <div className="w-32 h-32 bg-emerald-50 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-emerald-100 border-4 border-white">
                 <CheckCircle className="w-16 h-16 text-emerald-500" />
             </div>
-            <h2 className="text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">Booking Berhasil!</h2>
-            <p className="text-slate-500 mb-8 text-lg">Ruangan telah diamankan untuk Anda.</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">Booking Berhasil!</h2>
+            <p className="text-slate-500 mb-8 text-md sm:text-lg">Ruangan telah diamankan untuk Anda.</p>
             <div className="bg-white px-8 py-4 rounded-2xl font-mono font-bold text-slate-700 border-2 border-slate-100 shadow-lg mb-8 flex flex-col gap-1">
                 <span className="text-[10px] text-slate-400 uppercase tracking-widest">Booking ID</span>
                 <span className="text-xl">{newBookingId}</span>
@@ -710,10 +692,7 @@ const BookingFlow = ({ onChangePage }) => {
       )
 };
 
-// =========================================================================
-// Halaman Login Baru (Revisi Estetika Maskot dan Teks)
-// =========================================================================
-
+// ... (LoginHero tidak berubah)
 const LoginHero = () => {
     return (
         <div className="relative h-full w-full p-8 md:p-12 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-xl flex flex-col justify-center">
@@ -732,10 +711,6 @@ const LoginHero = () => {
                 </svg>
             </div>
             
-            {/* Maskot dengan Animasi */}
-            {/* REVISI: Kecepatan animasi idle (Floating) dipercepat dari 6s menjadi 3.5s */}
-            {/* REVISI: Menghapus border dan shadow keras pada maskot */}
-            {/* KOREKSI: Memastikan path gambar adalah PNG */}
             <style jsx global>{`
                 @keyframes slideIn {
                     from { opacity: 0; transform: translateY(50px) scale(0.8); }
@@ -746,9 +721,8 @@ const LoginHero = () => {
                     50% { transform: translateY(-8px); }
                 }
                 .maskot-animated {
-                    /* Animasi Idle dipercepat dari 6s menjadi 3.5s */
                     animation: slideIn 1s ease-out forwards, floating 3.5s ease-in-out infinite 1s;
-                    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); /* Menambah kesan 3D (Drop Shadow) */
+                    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); 
                 }
             `}</style>
 
@@ -756,17 +730,12 @@ const LoginHero = () => {
                 <img 
                     src="/maskot reservefy.png" 
                     alt="Maskot Reservefy" 
-                    // REVISI: Ukuran diubah jadi w-3/4 (75%) agar pas & tidak terlalu besar
-                    // REVISI: Margin bawah dikurangi jadi 10px (sebelumnya 20px/40px)
                     className="w-3/4 h-auto object-contain maskot-animated cursor-pointer transition-transform duration-300 hover:scale-105"
-                    // REVISI: Menghapus rounded-full, border, dan shadow box yang kaku
-                    // Animasi Interaktif: merespons hover
                     onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
                     onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
                     style={{ animationDelay: '0.3s', marginBottom: '10px' }}
                 />
                 <h1 className="text-3xl font-extrabold text-white tracking-tight drop-shadow-md text-center mt-2">Selamat Datang di Reservefy</h1>
-                {/* REVISI: Menghapus tulisan bertele-tele */}
                 <p className="text-emerald-100 text-sm max-w-xs text-center font-semibold mt-1">
                     Sistem Booking Ruangan Berbasis Poin SKS.
                 </p>
@@ -782,14 +751,12 @@ const LoginForm = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="w-full max-w-lg p-8 md:p-12"> {/* Lebar max-w-lg agar lebih luas */}
+        <div className="w-full max-w-sm sm:max-w-lg p-6 md:p-12"> {/* REVISI: MAX-WIDTH lebih kecil di mobile */}
             <div className="text-center mb-10 mt-10">
                 <div className="flex justify-center mx-auto mb-6">
-                    {/* Logo Reservefy diperbesar */}
-                    <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-56 h-auto object-contain drop-shadow-md"/>
+                    <img src="/logo reservefy.png" alt="Reservefy Logo" className="w-48 sm:w-56 h-auto object-contain drop-shadow-md"/> {/* REVISI: Logo lebih kecil di mobile */}
                 </div>
                 <h2 className="text-xl font-bold text-slate-700 mt-4">Masuk ke Akun Anda</h2>
-                {/* REVISI: Mengubah teks instruksi menjadi Username */}
                 <p className="text-sm text-slate-500">Gunakan Username dan Password Akun Reservefy Anda.</p>
             </div>
 
@@ -818,16 +785,15 @@ const LoginForm = () => {
                 </button>
             </form>
             
-            {/* Keterangan Login dan Link Bantuan */}
             <div className="mt-8 text-center pt-6 border-t border-slate-100 space-y-3">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                     Jika Anda memiliki kendala login atau membutuhkan akun baru, silakan hubungi Admin Akademik.
                 </p>
                 <div className="flex justify-center gap-4">
-                    <a href="mailto:admin@reservefy.uin.ac.id" className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                    <a href="hayaanuraa@gmail.com" className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
                         <MessageSquare size={16}/> Email Admin
                     </a>
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                    <a href="https://wa.me/628812839357" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-800 text-sm font-bold flex items-center gap-1 transition-colors">
                         <Phone size={16}/> WhatsApp Admin
                     </a>
                 </div>
@@ -839,16 +805,16 @@ const LoginForm = () => {
 
 const LoginPage = () => {
     return (
-        // Mengubah layout utama menjadi Flex/Grid 2 kolom di layar besar
         <div className="min-h-screen flex items-center justify-center font-sans bg-gray-50 p-4">
-            <div className="relative z-10 w-full max-w-6xl h-[650px] flex rounded-3xl overflow-hidden shadow-2xl shadow-slate-300 border border-white/50 animate-fade-in-up">
+            {/* REVISI: Mengubah Halaman Login agar Vertikal di Mobile */}
+            <div className="relative z-10 w-full max-w-4xl lg:max-w-6xl h-auto md:h-[650px] flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-2xl shadow-slate-300 border border-white/50 animate-fade-in-up">
                 
-                {/* Kolom Kiri (50/50 - Maskot & Background Gradasi) */}
-                <div className="hidden md:flex md:w-1/2">
+                {/* Kolom Kiri (Maskot & Background Gradasi) - Sembunyikan di mobile kecil agar form cepat muncul */}
+                <div className="hidden sm:flex sm:w-full md:w-1/2 min-h-60 md:min-h-full"> {/* REVISI: Tampilkan di sm: (mobile landscape dan tablet) */}
                     <LoginHero />
                 </div>
 
-                {/* Kolom Kanan (50/50 - Form Login) */}
+                {/* Kolom Kanan (Form Login) */}
                 <div className="w-full md:w-1/2 flex items-center justify-center bg-white/95">
                     <LoginForm />
                 </div>
@@ -875,7 +841,7 @@ function MainContent() {
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-4 py-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrentPage('dashboard')}>
-            <img src="/logo reservefy.png" alt="Reservefy Logo" className="h-10 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"/>
+            <img src="/logo reservefy.png" alt="Reservefy Logo" className="h-8 sm:h-10 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"/> {/* REVISI: Logo Header lebih kecil di mobile */}
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block leading-tight">
